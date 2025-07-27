@@ -1,0 +1,9 @@
+[package]
+name = "glossia-book-reader"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+glossia-api-client = { path = "../api-client" }
+glossia-shared = { path = "../shared" }
+glossia-text-parser = { path = "../text-parser" }

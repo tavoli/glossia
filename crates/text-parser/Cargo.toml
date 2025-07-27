@@ -1,0 +1,12 @@
+[package]
+name = "glossia-text-parser"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+glossia-shared = { path = "../shared" }
+regex = "1.10"
+unicode-segmentation = "1.10"
+
+[dev-dependencies]
+tokio-test = "0.4"
