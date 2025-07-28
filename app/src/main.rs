@@ -3,7 +3,7 @@ mod components;
 mod utils;
 
 use dioxus::prelude::*;
-use components::{FloatingButton, ProgressBar, ReadingContainer, TextInputModal, WordMeanings};
+use components::{FloatingButton, ProgressBar, ReadingContainer, TextInputModal, WordMeanings, WordMeaningsStyles};
 use glossia_book_reader::ReadingState;
 use glossia_shared::AppError;
 
@@ -46,25 +46,20 @@ fn App() -> Element {
     
     let future_simplification = use_resource(move || {
         let sentence = sentence_to_fetch.read().clone();
-        println!("Resource triggered with sentence: '{}'", sentence);
         async move {
             if sentence.is_empty() {
-                println!("Sentence is empty, returning None");
                 return None;
             }
             
-            println!("Processing sentence: '{}'", sentence);
             
             // Check cache first
             let cached_result = {
                 let state_read = reading_state.read();
                 let cached = state_read.simplified_cache.get(&sentence).cloned();
-                println!("Cache check for '{}': {}", sentence, if cached.is_some() { "found" } else { "not found" });
                 cached
             };
             
             if let Some(cached) = cached_result {
-                println!("Returning cached result for: '{}'", sentence);
                 
                 // While we're here, check if we should proactively fetch next sentence
                 let should_fetch_next = {
@@ -83,13 +78,13 @@ fn App() -> Element {
                         (state.sentences[state.position + 1].clone(), state.api_client.clone())
                     };
                     
-                    println!("Proactively fetching next sentence: '{}'", next_sentence);
-                    let mut reading_state_clone = reading_state.clone();
+                    let mut reading_state_for_proactive = reading_state.clone();
                     spawn(async move {
                         let request = glossia_shared::SimplificationRequest { sentence: next_sentence.clone() };
                         if let Ok(result) = api_client.simplify(request).await {
-                            reading_state_clone.write().simplified_cache.insert(next_sentence, result);
-                            println!("Proactively cached next sentence");
+                            let mut state = reading_state_for_proactive.write();
+                            state.simplified_cache.insert(next_sentence, result);
+                            drop(state); // Explicitly drop the write lock
                         }
                     });
                 }
@@ -97,19 +92,16 @@ fn App() -> Element {
                 return Some(Ok(cached));
             }
 
-            println!("Making API call for: '{}'", sentence);
             // Fetch from API using cloned client
             let result = {
                 let api_client = reading_state.read().api_client.clone();
                 api_client.simplify(glossia_shared::SimplificationRequest { sentence: sentence.clone() }).await
             };
             
-            println!("API call result: {:?}", result.is_ok());
             
             // Cache the result if successful
             if let Ok(ref res) = result {
                 reading_state.write().simplified_cache.insert(sentence.clone(), res.clone());
-                println!("Cached result for: '{}'", sentence);
             }
             
             Some(result)
@@ -120,7 +112,6 @@ fn App() -> Element {
     let on_next = move |_| {
         reading_state.write().next();
         if let Some(sentence) = reading_state.read().current_sentence() {
-            println!("Setting sentence_to_fetch (next): '{}'", sentence);
             sentence_to_fetch.set(sentence);
         }
     };
@@ -128,16 +119,21 @@ fn App() -> Element {
     let on_prev = move |_| {
         reading_state.write().previous();
         if let Some(sentence) = reading_state.read().current_sentence() {
-            println!("Setting sentence_to_fetch (prev): '{}'", sentence);
             sentence_to_fetch.set(sentence);
         }
     };
 
     rsx! {
         style { "body {{ margin: 0; padding: 0; }}" }
+        WordMeaningsStyles {}
         div {
             class: "app-container",
-            style: "height: 100vh; background: linear-gradient(to bottom, #f9f7f3, #f5f3ef); font-family: Georgia, serif; display: flex; flex-direction: column;",
+            style: "min-height: 100vh; width: 100%; background: white; font-family: Georgia, serif; display: flex; flex-direction: column; position: relative;",
+            
+            // Magenta Orb Grid Background
+            div {
+                style: "position: absolute; inset: 0; z-index: 1; background: white; background-image: linear-gradient(to right, rgba(71,85,105,0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(71,85,105,0.15) 1px, transparent 1px), radial-gradient(circle at 50% 60%, rgba(236,72,153,0.15) 0%, rgba(168,85,247,0.05) 40%, transparent 70%); background-size: 40px 40px, 40px 40px, 100% 100%;"
+            }
             
             ProgressBar { 
                 current: if reading_state().total_sentences > 0 { reading_state().position + 1 } else { 0 },
@@ -146,7 +142,7 @@ fn App() -> Element {
             
             div {
                 class: "centered-container",
-                style: "flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column;",
+                style: "flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; position: relative; z-index: 10;",
                 
                 {
                     let current_sentence = reading_state().current_sentence();
@@ -190,7 +186,12 @@ fn App() -> Element {
                         }
                         
                         if let Some(ref cached) = cached_result {
-                            WordMeanings { words: cached.words.clone() }
+                            WordMeanings { 
+                                words: cached.words.clone(),
+                                reading_state: reading_state,
+                                current_sentence: current_sentence_str.clone(),
+                                on_expand_word: move |_word: String| {}
+                            }
                         }
                     }
                 }
@@ -212,20 +213,16 @@ fn App() -> Element {
                 TextInputModal {
                     onsubmit: move |text: String| {
                         if !text.is_empty() {
-                            println!("Loading text: '{}'", text);
                             // Update single state
                             reading_state.write().load_text(&text);
                             
                             if let Some(sentence) = reading_state.read().current_sentence() {
-                                println!("Setting initial sentence_to_fetch: '{}'", sentence);
                                 sentence_to_fetch.set(sentence);
                             }
                             show_input_modal.set(false);
                         }
                     },
-                    onclose: move |_| {
-                        show_input_modal.set(false);
-                    }
+                    onclose: move |_| show_input_modal.set(false)
                 }
             }
         }

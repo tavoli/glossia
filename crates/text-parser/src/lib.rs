@@ -8,7 +8,7 @@ pub fn split_into_sentences(text: &str) -> Vec<String> {
     }
 
     // Split by sentence-ending punctuation, keeping the delimiter.
-    let re = Regex::new(r"([.?!|])\s+").unwrap();
+    let re = Regex::new(r"([.?!|;])\s+").unwrap();
     let mut sentences = Vec::new();
     let mut last_end = 0;
     

@@ -14,7 +14,7 @@ pub fn ReadingContainer(
     rsx! {
         div {
             class: "reading-container",
-            style: "background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); width: 80%; max-width: 700px; text-align: center;",
+            style: "background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); width: 80%; max-width: 700px; text-align: center; z-index: 20;",
             
             div {
                 class: "original-text",
