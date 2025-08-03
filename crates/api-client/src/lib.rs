@@ -48,7 +48,7 @@ impl OpenAIClient {
         let prompt = self.build_prompt(&request.sentence);
         
         let body = json!({
-            "model": "gpt-3.5-turbo",
+            "model": "gpt-4.1-mini",
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.3,
             "response_format": { "type": "json_object" }
@@ -97,21 +97,32 @@ impl OpenAIClient {
     
     fn build_prompt(&self, sentence: &str) -> String {
         format!(
-            r#"Simplify this sentence in modern English without losing detail. 
-            Also provide B2-level meanings for difficult words.
-            
-            Respond ONLY with valid JSON in this exact format:
-            {{
-                "original": "{}",
-                "simplified": "the simplified version",
-                "words": [
-                    {{"word": "difficult_word", "meaning": "B2-level explanation"}}
-                ]
-            }}
-            
-            Sentence to simplify: "{}"
-            "#,
-            sentence, sentence
+            r#"
+    You are a language assistant helping learners understand complex English.
+
+    Simplify the sentence below using clear and modern English, without losing important meaning.
+
+    Then identify words that are uncommon or difficult for people with only basic (B1) English knowledge. These include:
+    - formal or academic words,
+    - idioms,
+    - phrasal verbs,
+    - rare or technical terms.
+
+    For each difficult word, provide a B2+ level meaning in simple English.
+
+    Respond ONLY in this exact JSON format:
+    {{
+      "original": "{sentence}",
+      "simplified": "the simplified version",
+      "words": [
+        {{ "word": "difficult_word_1", "meaning": "simple explanation" }},
+        {{ "word": "difficult_word_2", "meaning": "simple explanation" }}
+      ]
+    }}
+
+    Sentence to simplify: "{sentence}"
+    "#,
+            sentence = sentence.replace('"', "\\\"")
         )
     }
 
@@ -322,12 +333,20 @@ impl BraveImageClient {
                 }
             })
             .take(request.count as usize)
-            .map(|item| ImageResult {
-                url: item.properties.as_ref().unwrap().url.clone(),
-                thumbnail_url: item.thumbnail.as_ref().unwrap().src.clone().unwrap_or_default(),
-                title: item.title.unwrap_or_default(),
-                width: item.properties.as_ref().unwrap().width,
-                height: item.properties.as_ref().unwrap().height,
+            .filter_map(|item| {
+                // Double-check that we have the required fields before creating ImageResult
+                if let (Some(properties), Some(thumbnail)) = (&item.properties, &item.thumbnail) {
+                    Some(ImageResult {
+                        url: properties.url.clone(),
+                        thumbnail_url: thumbnail.src.clone().unwrap_or_default(),
+                        title: item.title.unwrap_or_default(),
+                        width: properties.width,
+                        height: properties.height,
+                    })
+                } else {
+                    // Skip items with missing required fields
+                    None
+                }
             })
             .collect();
 

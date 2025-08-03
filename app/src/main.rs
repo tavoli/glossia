@@ -110,14 +110,24 @@ fn App() -> Element {
 
 
     let on_next = move |_| {
-        reading_state.write().next();
+        // Perform write operation and explicitly drop the lock
+        {
+            reading_state.write().next();
+        } // Write lock is dropped here
+        
+        // Now safely perform read operation
         if let Some(sentence) = reading_state.read().current_sentence() {
             sentence_to_fetch.set(sentence);
         }
     };
     
     let on_prev = move |_| {
-        reading_state.write().previous();
+        // Perform write operation and explicitly drop the lock
+        {
+            reading_state.write().previous();
+        } // Write lock is dropped here
+        
+        // Now safely perform read operation
         if let Some(sentence) = reading_state.read().current_sentence() {
             sentence_to_fetch.set(sentence);
         }
@@ -213,9 +223,12 @@ fn App() -> Element {
                 TextInputModal {
                     onsubmit: move |text: String| {
                         if !text.is_empty() {
-                            // Update single state
-                            reading_state.write().load_text(&text);
+                            // Update single state - perform write operation and explicitly drop the lock
+                            {
+                                reading_state.write().load_text(&text);
+                            } // Write lock is dropped here
                             
+                            // Now safely perform read operation
                             if let Some(sentence) = reading_state.read().current_sentence() {
                                 sentence_to_fetch.set(sentence);
                             }

@@ -8,7 +8,16 @@ pub fn split_into_sentences(text: &str) -> Vec<String> {
     }
 
     // Split by sentence-ending punctuation, keeping the delimiter.
-    let re = Regex::new(r"([.?!|;])\s+").unwrap();
+    let re = match Regex::new(r"([.?!|;])\s+") {
+        Ok(regex) => regex,
+        Err(_) => {
+            // If regex compilation fails, fallback to simple splitting
+            return text.split(&['.', '?', '!', '|', ';'])
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+        }
+    };
     let mut sentences = Vec::new();
     let mut last_end = 0;
     
