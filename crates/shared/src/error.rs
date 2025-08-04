@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-#[derive(Debug, Error, Clone)]
+#[derive(Debug, Error, Clone, PartialEq)]
 pub enum AppError {
     #[error("API request failed: {0}")]
     ApiError(String),

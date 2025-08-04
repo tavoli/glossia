@@ -2,47 +2,25 @@
 mod components;
 mod theme;
 mod utils;
+mod hooks;
+mod services;
 
 use dioxus::prelude::*;
-use components::{FloatingButton, ProgressBar, ReadingContainer, TextInputModal, ThemeToggle, WordMeanings, WordMeaningsStyles};
+use components::{FloatingButton, ProgressBar, ReadingContainer, TextInputModal, ThemeToggle, WordMeanings, WordMeaningsStyles, ErrorDisplay};
 use theme::{use_theme, Theme};
-use glossia_book_reader::ReadingState;
-use glossia_shared::AppError;
+use hooks::{use_reading_state, use_navigation, use_simplification, trigger_sentence_fetch};
+
 
 fn main() {
     dioxus_desktop::launch::launch(App, vec![], Default::default());
 }
 
-fn user_friendly_error(error: &AppError) -> String {
-    match error {
-        AppError::ApiError(msg) if msg.contains("404") => {
-            "The AI service is temporarily unavailable. Please try again later.".to_string()
-        },
-        AppError::ApiError(msg) if msg.contains("401") || msg.contains("403") => {
-            "Authentication error with the AI service. Please check your connection.".to_string()
-        },
-        AppError::ApiError(msg) if msg.contains("timeout") || msg.contains("network") => {
-            "Network connection issue. Please check your internet connection.".to_string()
-        },
-        AppError::ParseError(_) => {
-            "The AI response couldn't be processed. Please try again.".to_string()
-        },
-        AppError::InvalidResponseContent => {
-            "The AI service returned an unexpected response. Please try again.".to_string()
-        },
-        AppError::EmptyBook => {
-            "No text to process. Please add some text first.".to_string()
-        },
-        _ => {
-            "Something went wrong. Please try again.".to_string()
-        }
-    }
-}
+
 
 #[component]
 fn App() -> Element {
-    // Single state for everything
-    let mut reading_state = use_signal(ReadingState::new);
+    // Use custom hooks for cleaner state management
+    let mut reading_state = use_reading_state();
     let mut show_input_modal = use_signal(|| true);
     let mut sentence_to_fetch = use_signal(String::new);
     
@@ -50,92 +28,29 @@ fn App() -> Element {
     let mut theme_mode = use_theme();
     let theme = Theme::from_mode(*theme_mode.read());
     
-    let future_simplification = use_resource(move || {
-        let sentence = sentence_to_fetch.read().clone();
-        async move {
-            if sentence.is_empty() {
-                return None;
-            }
-            
-            
-            // Check cache first
-            let cached_result = {
-                let state_read = reading_state.read();
-                let cached = state_read.simplified_cache.get(&sentence).cloned();
-                cached
-            };
-            
-            if let Some(cached) = cached_result {
-                
-                // While we're here, check if we should proactively fetch next sentence
-                let should_fetch_next = {
-                    let state = reading_state.read();
-                    if state.position + 1 < state.sentences.len() {
-                        let next_sentence = &state.sentences[state.position + 1];
-                        state.simplified_cache.get(next_sentence).is_none()
-                    } else {
-                        false
-                    }
-                };
-                
-                if should_fetch_next {
-                    let (next_sentence, api_client) = {
-                        let state = reading_state.read();
-                        (state.sentences[state.position + 1].clone(), state.api_client.clone())
-                    };
-                    
-                    let mut reading_state_for_proactive = reading_state.clone();
-                    spawn(async move {
-                        let request = glossia_shared::SimplificationRequest { sentence: next_sentence.clone() };
-                        if let Ok(result) = api_client.simplify(request).await {
-                            let mut state = reading_state_for_proactive.write();
-                            state.simplified_cache.insert(next_sentence, result);
-                            drop(state); // Explicitly drop the write lock
-                        }
-                    });
-                }
-                
-                return Some(Ok(cached));
-            }
-
-            // Fetch from API using cloned client
-            let result = {
-                let api_client = reading_state.read().api_client.clone();
-                api_client.simplify(glossia_shared::SimplificationRequest { sentence: sentence.clone() }).await
-            };
-            
-            
-            // Cache the result if successful
-            if let Ok(ref res) = result {
-                reading_state.write().simplified_cache.insert(sentence.clone(), res.clone());
-            }
-            
-            Some(result)
-        }
-    });
+    // Navigation hooks
+    let (mut on_next, mut on_prev) = use_navigation(reading_state);
+    
+    // Use the custom simplification hook
+    let future_simplification = use_simplification(reading_state, sentence_to_fetch);
 
 
-    let on_next = move |_| {
-        // Perform write operation and explicitly drop the lock
-        {
-            reading_state.write().next();
-        } // Write lock is dropped here
-        
-        // Now safely perform read operation
-        if let Some(sentence) = reading_state.read().current_sentence() {
-            sentence_to_fetch.set(sentence);
+    // Enhanced navigation with sentence fetching
+    let enhanced_on_next = {
+        let sentence_to_fetch = sentence_to_fetch.clone();
+        let reading_state = reading_state.clone();
+        move |_| {
+            on_next();
+            trigger_sentence_fetch(reading_state, sentence_to_fetch);
         }
     };
     
-    let on_prev = move |_| {
-        // Perform write operation and explicitly drop the lock
-        {
-            reading_state.write().previous();
-        } // Write lock is dropped here
-        
-        // Now safely perform read operation
-        if let Some(sentence) = reading_state.read().current_sentence() {
-            sentence_to_fetch.set(sentence);
+    let enhanced_on_prev = {
+        let sentence_to_fetch = sentence_to_fetch.clone();
+        let reading_state = reading_state.clone();
+        move |_| {
+            on_prev();
+            trigger_sentence_fetch(reading_state, sentence_to_fetch);
         }
     };
 
@@ -162,8 +77,8 @@ fn App() -> Element {
             }
             
             ProgressBar { 
-                current: if reading_state().total_sentences > 0 { reading_state().position + 1 } else { 0 },
-                total: reading_state().total_sentences,
+                current: if reading_state().total_sentences() > 0 { reading_state().position() + 1 } else { 0 },
+                total: reading_state().total_sentences(),
                 theme: theme.clone()
             }
             
@@ -176,7 +91,7 @@ fn App() -> Element {
                     let current_sentence_str = current_sentence.clone().unwrap_or_default();
                     
                     // Check if we have a cached result for current sentence
-                    let cached_result = reading_state.read().simplified_cache.get(&current_sentence_str).cloned();
+                    let cached_result = reading_state.read().cache.get_simplified(&current_sentence_str);
                     
                     // Check if there's an error for this sentence
                     let sentence_being_fetched = sentence_to_fetch.read().clone();
@@ -195,10 +110,9 @@ fn App() -> Element {
                     rsx! {
                         if has_error {
                             if let Some(Some(Err(e))) = future_simplification.read().as_ref() {
-                                div {
-                                    class: "error-message",
-                                    style: "background: {theme.error_bg}; color: {theme.error}; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid {theme.border}; text-align: center;",
-                                    "⚠️ {user_friendly_error(e)}"
+                                ErrorDisplay { 
+                                    error: e.clone(),
+                                    theme: theme.clone()
                                 }
                             }
                         }
@@ -209,8 +123,8 @@ fn App() -> Element {
                             is_loading,
                             words: cached_result.as_ref().map(|r| r.words.clone()),
                             theme: theme.clone(),
-                            on_next,
-                            on_prev,
+                            on_next: enhanced_on_next,
+                            on_prev: enhanced_on_prev,
                         }
                         
                         if let Some(ref cached) = cached_result {
@@ -227,10 +141,10 @@ fn App() -> Element {
             }
             
             // Show floating button if there are sentences, or if modal is closed but no text loaded
-            if reading_state().total_sentences > 0 || !show_input_modal() {
+            if reading_state().total_sentences() > 0 || !show_input_modal() {
                 FloatingButton {
-                    count: if reading_state().total_sentences > 0 {
-                        reading_state().total_sentences.saturating_sub(reading_state().position + 1)
+                    count: if reading_state().total_sentences() > 0 {
+                        reading_state().total_sentences().saturating_sub(reading_state().position() + 1)
                     } else {
                         0 // Show 0 when no text is loaded
                     },
@@ -257,6 +171,7 @@ fn App() -> Element {
                     onclose: move |_| show_input_modal.set(false)
                 }
             }
+
         }
     }
 }
