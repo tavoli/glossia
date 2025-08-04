@@ -110,6 +110,49 @@ impl OpenAIClient {
         )
     }
 
+    pub async fn get_word_meaning(&self, word: &str, context: &str) -> Result<String, AppError> {
+        let prompt = format!(
+            r#"Define the word "{}" in simple English using maximum 15 words.
+
+Context: "{}"
+
+Provide a clear, concise definition that helps someone understand the word's meaning in this context.
+
+Respond with ONLY the definition, no extra formatting or quotes."#,
+            word, context
+        );
+
+        let body = json!({
+            "model": "gpt-4o-mini",
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.3,
+            "max_tokens": 30
+        });
+
+        let response = self.retry_service.retry(|| async {
+            self.client
+                .post(format!("{}/chat/completions", self.base_url))
+                .header("Authorization", format!("Bearer {}", self.api_key))
+                .header("Content-Type", "application/json")
+                .json(&body)
+                .send()
+                .await
+        }).await?;
+
+        if response.status().is_success() {
+            let openai_response = response.json::<OpenAIResponse>().await?;
+            let content = openai_response.choices.get(0)
+                .map(|c| c.message.content.clone())
+                .ok_or(AppError::InvalidResponseContent)?;
+            
+            Ok(content.trim().to_string())
+        } else {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_default();
+            Err(AppError::ApiError(format!("HTTP {}: {}", status, error_text)))
+        }
+    }
+
     pub async fn optimize_image_query(&self, request: ImageQueryOptimizationRequest) -> Result<ImageQueryOptimizationResponse, AppError> {
         let prompt = format!(
     r#"Generate an image search query for the word '{}' based on its contextual meaning.

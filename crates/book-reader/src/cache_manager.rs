@@ -8,6 +8,7 @@ pub struct CacheManager {
     simplified_cache: HashMap<String, SimplificationResponse>,
     image_cache: HashMap<String, Vec<ImageResult>>,
     optimized_query_cache: HashMap<String, String>, // context_key -> optimized query
+    word_meaning_cache: HashMap<String, String>, // word -> meaning
 }
 
 impl CacheManager {
@@ -42,6 +43,15 @@ impl CacheManager {
         self.optimized_query_cache.insert(context_key, query);
     }
 
+    // Word meaning cache methods
+    pub fn get_word_meaning(&self, word: &str) -> Option<String> {
+        self.word_meaning_cache.get(word).cloned()
+    }
+
+    pub fn cache_word_meaning(&mut self, word: String, meaning: String) {
+        self.word_meaning_cache.insert(word.to_lowercase(), meaning);
+    }
+
     // Helper method to generate context-aware cache key
     pub fn generate_context_key(&self, word: &str, sentence_context: &str) -> String {
         let mut hasher = DefaultHasher::new();
@@ -55,11 +65,13 @@ impl CacheManager {
         self.simplified_cache.clear();
         self.image_cache.clear();
         self.optimized_query_cache.clear();
+        self.word_meaning_cache.clear();
     }
 
     /// Clear only text-related caches (keep image cache for reuse)
     pub fn clear_text_caches(&mut self) {
         self.simplified_cache.clear();
         self.optimized_query_cache.clear();
+        // Keep word meanings cache as words can be reused across texts
     }
 }

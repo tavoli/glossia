@@ -8,7 +8,7 @@ mod services;
 use dioxus::prelude::*;
 use components::{FloatingButton, ProgressBar, ReadingContainer, TextInputModal, ThemeToggle, WordMeanings, WordMeaningsStyles, ErrorDisplay};
 use theme::{use_theme, Theme};
-use hooks::{use_reading_state, use_navigation, use_simplification, trigger_sentence_fetch};
+use hooks::{use_reading_state, use_navigation, use_simplification, trigger_sentence_fetch, use_word_meanings, trigger_word_meaning_fetch};
 
 
 fn main() {
@@ -23,6 +23,7 @@ fn App() -> Element {
     let mut reading_state = use_reading_state();
     let mut show_input_modal = use_signal(|| true);
     let mut sentence_to_fetch = use_signal(String::new);
+    let word_to_fetch = use_signal(String::new);
     
     // Theme state
     let mut theme_mode = use_theme();
@@ -33,9 +34,12 @@ fn App() -> Element {
     
     // Use the custom simplification hook
     let future_simplification = use_simplification(reading_state, sentence_to_fetch);
+    
+    // Use the word meanings hook
+    let _word_meaning_result = use_word_meanings(reading_state, word_to_fetch);
 
 
-    // Enhanced navigation with sentence fetching
+    // Enhanced navigation with sentence fetching for buttons
     let enhanced_on_next = {
         let sentence_to_fetch = sentence_to_fetch.clone();
         let reading_state = reading_state.clone();
@@ -49,6 +53,27 @@ fn App() -> Element {
         let sentence_to_fetch = sentence_to_fetch.clone();
         let reading_state = reading_state.clone();
         move |_| {
+            on_prev();
+            trigger_sentence_fetch(reading_state, sentence_to_fetch);
+        }
+    };
+
+    // Separate closures for keyboard navigation
+    let mut keyboard_on_next = {
+        let sentence_to_fetch = sentence_to_fetch.clone();
+        let reading_state = reading_state.clone();
+        let (mut on_next, _) = use_navigation(reading_state);
+        move || {
+            on_next();
+            trigger_sentence_fetch(reading_state, sentence_to_fetch);
+        }
+    };
+    
+    let mut keyboard_on_prev = {
+        let sentence_to_fetch = sentence_to_fetch.clone();
+        let reading_state = reading_state.clone();
+        let (_, mut on_prev) = use_navigation(reading_state);
+        move || {
             on_prev();
             trigger_sentence_fetch(reading_state, sentence_to_fetch);
         }
@@ -70,6 +95,16 @@ fn App() -> Element {
         div {
             class: "app-container",
             style: "min-height: 100vh; width: 100%; background: {theme.background}; font-family: Georgia, serif; display: flex; flex-direction: column; position: relative;",
+            tabindex: 0,
+            onkeydown: move |e| {
+                if !show_input_modal() && reading_state().total_sentences() > 0 {
+                    match e.key() {
+                        Key::ArrowRight => keyboard_on_next(),
+                        Key::ArrowLeft => keyboard_on_prev(),
+                        _ => {}
+                    }
+                }
+            },
             
             // Theme-aware grid background
             div {
@@ -121,19 +156,40 @@ fn App() -> Element {
                             original: current_sentence,
                             simplified: cached_result.as_ref().map(|r| r.simplified.clone()),
                             is_loading,
-                            words: cached_result.as_ref().map(|r| r.words.clone()),
+                            words: {
+                                let empty_vec = Vec::new();
+                                let api_words = cached_result.as_ref().map(|r| &r.words).unwrap_or(&empty_vec);
+                                let combined_words = reading_state.read().get_combined_words(api_words);
+                                Some(combined_words)
+                            },
                             theme: theme.clone(),
                             on_next: enhanced_on_next,
                             on_prev: enhanced_on_prev,
+                            on_word_click: move |word: String| {
+                                // Add word to manual words list and trigger meaning fetch
+                                reading_state.write().add_manual_word(word.clone());
+                                trigger_word_meaning_fetch(word, word_to_fetch);
+                            }
                         }
                         
-                        if let Some(ref cached) = cached_result {
-                            WordMeanings { 
-                                words: cached.words.clone(),
-                                reading_state: reading_state,
-                                current_sentence: current_sentence_str.clone(),
-                                theme: theme.clone(),
-                                on_expand_word: move |_word: String| {}
+                        // Show word meanings if we have API words or manual words
+                        {
+                            let empty_vec = Vec::new();
+                            let api_words = cached_result.as_ref().map(|r| &r.words).unwrap_or(&empty_vec);
+                            let combined_words = reading_state.read().get_combined_words(api_words);
+                            
+                            if !combined_words.is_empty() {
+                                rsx! {
+                                    WordMeanings { 
+                                        words: combined_words,
+                                        reading_state: reading_state,
+                                        current_sentence: current_sentence_str.clone(),
+                                        theme: theme.clone(),
+                                        on_expand_word: move |_word: String| {}
+                                    }
+                                }
+                            } else {
+                                None
                             }
                         }
                     }

@@ -27,32 +27,38 @@ pub fn generate_word_color(word: &str) -> String {
     colors[index].to_string()
 }
 
-/// Highlight words in text with their corresponding colors
-pub fn highlight_words_in_text(text: &str, words: &[glossia_shared::WordMeaning]) -> String {
-    let mut highlighted_text = text.to_string();
-    
-    for word_meaning in words {
-        let word = &word_meaning.word;
-        let color = generate_word_color(word);
+
+/// Tokenize text into word elements for click handling
+pub fn tokenize_text_for_clicks(text: &str) -> Vec<String> {
+    // Split text into words and non-word characters (spaces, punctuation, etc.)
+    let mut tokens = Vec::new();
+    let mut current_token = String::new();
+    let mut is_word = false;
+
+    for ch in text.chars() {
+        let char_is_word = ch.is_alphabetic();
         
-        // Create a case-insensitive regex pattern for the word
-        // We need to be careful about word boundaries to avoid partial matches
-        let pattern = format!(r"\b{}\b", regex::escape(&word.to_lowercase()));
-        
-        if let Ok(re) = regex::RegexBuilder::new(&pattern)
-            .case_insensitive(true)
-            .build() {
-            
-            highlighted_text = re.replace_all(&highlighted_text, |caps: &regex::Captures| {
-                let matched_word = &caps[0];
-                format!(
-                    r#"<span style="color: white; font-weight: 600; background: {}; padding: 3px 8px; border-radius: 16px; font-size: 0.95em; box-shadow: 0 1px 3px rgba(0,0,0,0.15);">{}</span>"#,
-                    color,
-                    matched_word
-                )
-            }).to_string();
+        if char_is_word != is_word {
+            // Character type changed, push current token if not empty
+            if !current_token.is_empty() {
+                tokens.push(current_token.clone());
+                current_token.clear();
+            }
+            is_word = char_is_word;
         }
+        
+        current_token.push(ch);
     }
     
-    highlighted_text
+    // Push the last token if not empty
+    if !current_token.is_empty() {
+        tokens.push(current_token);
+    }
+    
+    tokens
+}
+
+/// Check if a token is a word (contains only alphabetic characters)
+pub fn is_word_token(token: &str) -> bool {
+    !token.is_empty() && token.chars().all(|c| c.is_alphabetic())
 }
