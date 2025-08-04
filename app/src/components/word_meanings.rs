@@ -9,6 +9,7 @@ pub fn WordMeanings(
     on_expand_word: EventHandler<String>, 
     reading_state: Signal<glossia_book_reader::ReadingState>,
     current_sentence: String,
+    theme: crate::theme::Theme,
 ) -> Element {
     if words.is_empty() {
         return None;

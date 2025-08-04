@@ -1,9 +1,11 @@
 #![allow(non_snake_case)]
 mod components;
+mod theme;
 mod utils;
 
 use dioxus::prelude::*;
-use components::{FloatingButton, ProgressBar, ReadingContainer, TextInputModal, WordMeanings, WordMeaningsStyles};
+use components::{FloatingButton, ProgressBar, ReadingContainer, TextInputModal, ThemeToggle, WordMeanings, WordMeaningsStyles};
+use theme::{use_theme, Theme};
 use glossia_book_reader::ReadingState;
 use glossia_shared::AppError;
 
@@ -43,6 +45,10 @@ fn App() -> Element {
     let mut reading_state = use_signal(ReadingState::new);
     let mut show_input_modal = use_signal(|| true);
     let mut sentence_to_fetch = use_signal(String::new);
+    
+    // Theme state
+    let mut theme_mode = use_theme();
+    let theme = Theme::from_mode(*theme_mode.read());
     
     let future_simplification = use_resource(move || {
         let sentence = sentence_to_fetch.read().clone();
@@ -134,20 +140,31 @@ fn App() -> Element {
     };
 
     rsx! {
-        style { "body {{ margin: 0; padding: 0; }}" }
-        WordMeaningsStyles {}
+        style { "body {{ margin: 0; padding: 0; background: {theme.background}; color: {theme.text_primary}; }}" }
+        WordMeaningsStyles { theme: theme.clone() }
+        ThemeToggle { 
+            theme_mode, 
+            on_toggle: move |_| {
+                let new_mode = match *theme_mode.read() {
+                    crate::theme::ThemeMode::Light => crate::theme::ThemeMode::Dark,
+                    crate::theme::ThemeMode::Dark => crate::theme::ThemeMode::Light,
+                };
+                theme_mode.set(new_mode);
+            }
+        }
         div {
             class: "app-container",
-            style: "min-height: 100vh; width: 100%; background: white; font-family: Georgia, serif; display: flex; flex-direction: column; position: relative;",
+            style: "min-height: 100vh; width: 100%; background: {theme.background}; font-family: Georgia, serif; display: flex; flex-direction: column; position: relative;",
             
-            // Magenta Orb Grid Background
+            // Theme-aware grid background
             div {
-                style: "position: absolute; inset: 0; z-index: 1; background: white; background-image: linear-gradient(to right, rgba(71,85,105,0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(71,85,105,0.15) 1px, transparent 1px), radial-gradient(circle at 50% 60%, rgba(236,72,153,0.15) 0%, rgba(168,85,247,0.05) 40%, transparent 70%); background-size: 40px 40px, 40px 40px, 100% 100%;"
+                style: "position: absolute; inset: 0; z-index: 1; background: {theme.background}; background-image: linear-gradient(to right, {theme.border} 1px, transparent 1px), linear-gradient(to bottom, {theme.border} 1px, transparent 1px), radial-gradient(circle at 50% 60%, rgba(236,72,153,0.15) 0%, rgba(168,85,247,0.05) 40%, transparent 70%); background-size: 40px 40px, 40px 40px, 100% 100%;"
             }
             
             ProgressBar { 
                 current: if reading_state().total_sentences > 0 { reading_state().position + 1 } else { 0 },
-                total: reading_state().total_sentences 
+                total: reading_state().total_sentences,
+                theme: theme.clone()
             }
             
             div {
@@ -180,7 +197,7 @@ fn App() -> Element {
                             if let Some(Some(Err(e))) = future_simplification.read().as_ref() {
                                 div {
                                     class: "error-message",
-                                    style: "background: #ffebee; color: #c62828; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ffcdd2; text-align: center;",
+                                    style: "background: {theme.error_bg}; color: {theme.error}; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid {theme.border}; text-align: center;",
                                     "⚠️ {user_friendly_error(e)}"
                                 }
                             }
@@ -191,6 +208,7 @@ fn App() -> Element {
                             simplified: cached_result.as_ref().map(|r| r.simplified.clone()),
                             is_loading,
                             words: cached_result.as_ref().map(|r| r.words.clone()),
+                            theme: theme.clone(),
                             on_next,
                             on_prev,
                         }
@@ -200,6 +218,7 @@ fn App() -> Element {
                                 words: cached.words.clone(),
                                 reading_state: reading_state,
                                 current_sentence: current_sentence_str.clone(),
+                                theme: theme.clone(),
                                 on_expand_word: move |_word: String| {}
                             }
                         }
