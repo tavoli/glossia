@@ -86,21 +86,24 @@ impl OpenAIClient {
 
     Simplify the sentence below using clear and modern English, without losing important meaning.
 
-    Then identify words that are uncommon or difficult for people with only basic (B1) English knowledge. These include:
+    Then identify words AND phrases that are uncommon or difficult for people with only basic (B1) English knowledge. These include:
     - formal or academic words,
     - idioms,
     - phrasal verbs,
+    - multi-word expressions,
+    - collocations,
     - rare or technical terms.
 
-    For each difficult word, provide a B2+ level meaning in simple English.
+    For each difficult word or phrase, provide a B2+ level meaning in simple English.
 
     Respond ONLY in this exact JSON format:
     {{
       "original": "{sentence}",
       "simplified": "the simplified version",
       "words": [
-        {{ "word": "difficult_word_1", "meaning": "simple explanation" }},
-        {{ "word": "difficult_word_2", "meaning": "simple explanation" }}
+        {{ "word": "difficult_word_1", "meaning": "simple explanation", "is_phrase": false }},
+        {{ "word": "multi word phrase", "meaning": "simple explanation", "is_phrase": true }},
+        {{ "word": "another_word", "meaning": "simple explanation", "is_phrase": false }}
       ]
     }}
 

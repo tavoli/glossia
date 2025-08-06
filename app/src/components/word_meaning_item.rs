@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use glossia_shared::WordMeaning;
 use crate::utils::generate_word_color;
 use crate::components::ImageGallery;
-use crate::hooks::{use_image_cache, use_image_fetcher};
+use crate::hooks::{use_image_cache, use_image_fetcher, use_vocabulary};
 use std::collections::HashSet;
 use glossia_book_reader::ReadingState;
 
@@ -16,6 +16,14 @@ pub fn WordMeaningItem(
     current_sentence: String,
 ) -> Element {
     let is_expanded = expanded_words.read().contains(&word_meaning.word);
+    
+    // Get vocabulary state for progress tracking
+    let vocabulary_state = use_vocabulary();
+    
+    // Get word progress (encounter count)
+    let (encounter_count, is_known) = vocabulary_state.read()
+        .get_word_progress(&word_meaning.word)
+        .unwrap_or((0, false));
     
     // Image cache for this component
     let image_cache = use_image_cache();
@@ -62,6 +70,35 @@ pub fn WordMeaningItem(
                 div {
                     class: "meaning-definition",
                     "{word_meaning.meaning}"
+                }
+                
+                // Progress indicator showing encounter count
+                if encounter_count > 0 && !is_known {
+                    div {
+                        class: "progress-container",
+                        style: "display: flex; flex-direction: column; align-items: center; margin-left: auto; gap: 2px;",
+                        
+                        div {
+                            class: "progress-text",
+                            style: "font-size: 0.7em; color: #666; white-space: nowrap;",
+                            title: format!("Seen {} times - {} more to auto-add", encounter_count, 12_u32.saturating_sub(encounter_count)),
+                            "{encounter_count}/12"
+                        }
+                        
+                        div {
+                            class: "progress-bar-bg",
+                            style: "width: 40px; height: 3px; background: rgba(0,0,0,0.1); border-radius: 2px; overflow: hidden;",
+                            
+                            div {
+                                class: "progress-bar-fill",
+                                style: format!(
+                                    "height: 100%; background: {}; width: {}%; transition: width 0.3s ease;",
+                                    if encounter_count >= 10 { "#ff6b6b" } else if encounter_count >= 6 { "#ffa726" } else { "#4fc3f7" },
+                                    (encounter_count as f32 / 12.0 * 100.0) as u32
+                                ),
+                            }
+                        }
+                    }
                 }
                 
                 div {

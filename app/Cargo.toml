@@ -11,6 +11,11 @@ glossia-shared = { path = "../crates/shared" }
 regex = "1.0"
 futures-util = "0.3"
 serde = { workspace = true }
+serde_json = { workspace = true }
+dirs = "5.0"
+anyhow = "1.0"
+tokio = { version = "1.0", features = ["time"] }
 
 [dev-dependencies]
 dioxus-hot-reload = { version = "0.5.1" }
+tempfile = "3.0"

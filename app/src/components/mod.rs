@@ -8,6 +8,8 @@ pub mod word_meanings;
 pub mod error_display;
 pub mod image_gallery;
 pub mod word_meaning_item;
+pub mod known_words_counter;
+pub mod known_words_modal;
 
 pub use floating_button::FloatingButton;
 pub use progress_bar::ProgressBar;
@@ -19,3 +21,5 @@ pub use word_meanings::WordMeanings;
 pub use error_display::ErrorDisplay;
 pub use image_gallery::ImageGallery;
 pub use word_meaning_item::WordMeaningItem;
+pub use known_words_counter::KnownWordsCounter;
+pub use known_words_modal::KnownWordsModal;

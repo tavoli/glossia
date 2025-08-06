@@ -99,10 +99,10 @@ impl ReadingState {
                 let meaning = self.cache.get_word_meaning(manual_word)
                     .unwrap_or_else(|| "Loading meaning...".to_string());
                 
-                combined_words.push(WordMeaning {
-                    word: manual_word.clone(),
+                combined_words.push(WordMeaning::new_word(
+                    manual_word.clone(),
                     meaning,
-                });
+                ));
             }
         }
         
