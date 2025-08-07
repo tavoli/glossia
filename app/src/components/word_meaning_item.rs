@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use glossia_shared::WordMeaning;
-use crate::utils::generate_word_color;
+use crate::utils::generate_word_color_themed;
+use crate::theme::Theme;
 use crate::components::ImageGallery;
 use crate::hooks::{use_image_cache, use_image_fetcher, use_vocabulary};
 use std::collections::HashSet;
@@ -14,6 +15,7 @@ pub fn WordMeaningItem(
     on_expand_word: EventHandler<String>,
     reading_state: Signal<ReadingState>,
     current_sentence: String,
+    theme: Theme,
 ) -> Element {
     let is_expanded = expanded_words.read().contains(&word_meaning.word);
     
@@ -63,7 +65,7 @@ pub fn WordMeaningItem(
                 
                 div {
                     class: "word-label",
-                    style: format!("background: {};", generate_word_color(&word_meaning.word)),
+                    style: format!("background: {};", generate_word_color_themed(&word_meaning.word, &theme)),
                     "{word_meaning.word}"
                 }
                 

@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use glossia_shared::WordMeaning;
 use crate::theme::Theme;
-use crate::utils::{tokenize_text_for_clicks, is_word_token, generate_word_color, find_phrase_matches};
+use crate::utils::{tokenize_text_for_clicks, is_word_token, generate_word_color_themed, find_phrase_matches};
 
 #[component]
 pub fn ReadingContainer(
@@ -15,7 +15,9 @@ pub fn ReadingContainer(
     on_word_click: EventHandler<String>
 ) -> Element {
     // Helper function to render clickable text with phrase support
-    let render_clickable_text = move |text: &str, word_meanings: Option<&Vec<WordMeaning>>| -> Element {
+    let render_clickable_text = {
+        let theme_clone = theme.clone();
+        move |text: &str, word_meanings: Option<&Vec<WordMeaning>>| -> Element {
         let tokens = tokenize_text_for_clicks(text);
         let empty_vec = Vec::new();
         let word_meanings = word_meanings.unwrap_or(&empty_vec);
@@ -71,7 +73,7 @@ pub fn ReadingContainer(
                         span.text.clone()
                     };
                     
-                    let color = generate_word_color(&span_text);
+                    let color = generate_word_color_themed(&span_text, &theme_clone);
                     let font_weight = "600";
                     
                     // Render the entire span as one highlighted unit
@@ -128,6 +130,7 @@ pub fn ReadingContainer(
                 
                 elements.into_iter()
             }
+        }
         }
     };
 

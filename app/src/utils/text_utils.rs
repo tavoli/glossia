@@ -1,30 +1,66 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use crate::theme::{Theme, ThemeMode};
 
-/// Generate a consistent color for a given word
+/// Generate a consistent color for a given word (legacy function for backwards compatibility)
 pub fn generate_word_color(word: &str) -> String {
+    // Use light theme colors by default for backwards compatibility
+    generate_word_color_themed(word, &Theme::light())
+}
+
+/// Generate a consistent color for a given word based on the current theme
+pub fn generate_word_color_themed(word: &str, theme: &Theme) -> String {
     // Create a hash of the word for consistency
     let mut hasher = DefaultHasher::new();
     word.to_lowercase().hash(&mut hasher);
     let hash = hasher.finish();
 
-    // Define a palette of readable colors with good contrast
-    let colors = [
-        "#e53e3e", // Red
-        "#dd6b20", // Orange
-        "#d69e2e", // Yellow
-        "#38a169", // Green
-        "#319795", // Teal
-        "#3182ce", // Blue
-        "#805ad5", // Purple
-        "#d53f8c", // Pink
-        "#2d3748", // Gray
-        "#744210", // Brown
-    ];
+    let colors = match theme.mode {
+        ThemeMode::Light => light_theme_colors(),
+        ThemeMode::Dark => dark_theme_colors(),
+    };
 
     // Select color based on hash
     let index = (hash as usize) % colors.len();
     colors[index].to_string()
+}
+
+/// Color palette optimized for light theme
+/// Colors are vibrant but not too bright, ensuring good readability on white/light backgrounds
+fn light_theme_colors() -> [&'static str; 12] {
+    [
+        "#d63384", // Bright Pink - good contrast on light
+        "#fd7e14", // Vibrant Orange
+        "#ffc107", // Golden Yellow
+        "#20c997", // Teal Green
+        "#0dcaf0", // Cyan Blue
+        "#6f42c1", // Purple
+        "#dc3545", // Red
+        "#198754", // Forest Green
+        "#0d6efd", // Primary Blue
+        "#6610f2", // Indigo
+        "#d63384", // Magenta
+        "#495057", // Dark Gray
+    ]
+}
+
+/// Color palette optimized for dark theme
+/// Colors are bright and saturated to ensure good visibility on dark backgrounds
+fn dark_theme_colors() -> [&'static str; 12] {
+    [
+        "#ff6b9d", // Bright Pink - excellent visibility on dark
+        "#ffa726", // Light Orange
+        "#ffeb3b", // Bright Yellow
+        "#4caf50", // Light Green
+        "#29b6f6", // Light Blue
+        "#ab47bc", // Light Purple
+        "#ef5350", // Light Red
+        "#66bb6a", // Mint Green
+        "#42a5f5", // Sky Blue
+        "#7e57c2", // Light Indigo
+        "#ec407a", // Light Magenta
+        "#bdbdbd", // Light Gray
+    ]
 }
 
 /// Tokenize text into word elements for click handling
@@ -168,5 +204,52 @@ fn try_match_phrase_at(tokens: &[String], start_idx: usize, phrase_words: &[&str
         Some(token_idx - 1) // Return the last token index of the phrase
     } else {
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::theme::{Theme, ThemeMode};
+
+    #[test]
+    fn test_theme_aware_colors() {
+        let light_theme = Theme::light();
+        let dark_theme = Theme::dark();
+        
+        let test_word = "example";
+        
+        // Get colors for both themes
+        let light_color = generate_word_color_themed(test_word, &light_theme);
+        let dark_color = generate_word_color_themed(test_word, &dark_theme);
+        
+        // Colors should be different for different themes
+        assert_ne!(light_color, dark_color);
+        
+        // Colors should be consistent for the same word and theme
+        let light_color_2 = generate_word_color_themed(test_word, &light_theme);
+        let dark_color_2 = generate_word_color_themed(test_word, &dark_theme);
+        
+        assert_eq!(light_color, light_color_2);
+        assert_eq!(dark_color, dark_color_2);
+        
+        // Colors should be valid hex codes
+        assert!(light_color.starts_with('#'));
+        assert!(dark_color.starts_with('#'));
+        assert_eq!(light_color.len(), 7); // #RRGGBB format
+        assert_eq!(dark_color.len(), 7); // #RRGGBB format
+    }
+
+    #[test]
+    fn test_backwards_compatibility() {
+        let test_word = "compatibility";
+        
+        // Legacy function should still work
+        let legacy_color = generate_word_color(test_word);
+        
+        // Should be same as light theme
+        let light_theme_color = generate_word_color_themed(test_word, &Theme::light());
+        
+        assert_eq!(legacy_color, light_theme_color);
     }
 }

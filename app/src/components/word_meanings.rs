@@ -33,6 +33,7 @@ pub fn WordMeanings(
                         on_expand_word: on_expand_word.clone(),
                         reading_state: reading_state.clone(),
                         current_sentence: current_sentence.clone(),
+                        theme: theme.clone(),
                     }
                 }
             }
