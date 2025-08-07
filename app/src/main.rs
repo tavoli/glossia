@@ -10,6 +10,7 @@ use dioxus::prelude::*;
 use components::{FloatingButton, ProgressBar, ReadingContainer, TextInputModal, ThemeToggle, WordMeanings, WordMeaningsStyles, ErrorDisplay, KnownWordsCounter, KnownWordsModal};
 use theme::{use_theme, Theme};
 use hooks::{use_reading_state, use_navigation, use_simplification, trigger_sentence_fetch, use_word_meanings, trigger_word_meaning_fetch, use_vocabulary};
+use utils::word_utils::{is_word_already_difficult, get_display_words, format_promotion_message};
 
 
 fn main() {
@@ -149,42 +150,24 @@ fn App() -> Element {
                     let cached_result = reading_state.read().cache.get_simplified(&current_sentence_str);
                     
                     // Track encounters for words when we have a cached result (words are being displayed)
-                    // Only do this once per sentence to avoid multiple encounter recordings
                     if let Some(ref result) = cached_result {
-                        let sentence_key = current_sentence_str.clone();
-                        let already_tracked = encounter_tracked_sentences.read().contains(&sentence_key);
+                        let promoted_words = track_word_encounters(
+                            &current_sentence_str,
+                            &result.words,
+                            &mut encounter_tracked_sentences,
+                            &mut vocabulary_state,
+                        );
                         
-                        if !already_tracked {
-                            // Mark this sentence as tracked
-                            encounter_tracked_sentences.write().insert(sentence_key);
+                        // Show notification for promoted words
+                        if let Some(notification_text) = format_promotion_message(&promoted_words) {
+                            promotion_notification.set(Some(notification_text));
                             
-                            let mut vocab_state = vocabulary_state.write();
-                            let mut promoted_words = Vec::new();
-                            
-                            for word_meaning in &result.words {
-                                if let Ok((_count, promoted)) = vocab_state.add_word_encounter(&word_meaning.word) {
-                                    if promoted {
-                                        promoted_words.push(word_meaning.word.clone());
-                                    }
-                                }
-                            }
-                            
-                            // Show notification for promoted words
-                            if !promoted_words.is_empty() {
-                                let notification_text = if promoted_words.len() == 1 {
-                                    format!("'{}' added to known words!", promoted_words[0])
-                                } else {
-                                    format!("{} words added to known words!", promoted_words.len())
-                                };
-                                promotion_notification.set(Some(notification_text));
-                                
-                                // Clear notification after 3 seconds
-                                let mut notification_clone = promotion_notification.clone();
-                                spawn(async move {
-                                    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-                                    notification_clone.set(None);
-                                });
-                            }
+                            // Clear notification after 3 seconds
+                            let mut notification_clone = promotion_notification.clone();
+                            spawn(async move {
+                                tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+                                notification_clone.set(None);
+                            });
                         }
                     }
                     
@@ -219,38 +202,19 @@ fn App() -> Element {
                             words: {
                                 let empty_vec = Vec::new();
                                 let api_words = cached_result.as_ref().map(|r| &r.words).unwrap_or(&empty_vec);
-                                let combined_words = reading_state.read().get_combined_words(api_words);
-                                // Filter out known words from highlighting
-                                let filtered_words = vocabulary_state.read().filter_known_words(&combined_words);
+                                let filtered_words = get_display_words(api_words, &reading_state.read(), &vocabulary_state.read());
                                 Some(filtered_words)
                             },
                             theme: theme.clone(),
                             on_next: enhanced_on_next,
                             on_prev: enhanced_on_prev,
                             on_word_click: move |word: String| {
-                                // Get current sentence and check if word is already highlighted (difficult)
-                                let current_sentence_str = reading_state.read().current_sentence().unwrap_or_default();
-                                let cached_result = reading_state.read().cache.get_simplified(&current_sentence_str);
-                                
-                                let empty_vec = Vec::new();
-                                let api_words = cached_result.as_ref().map(|r| &r.words).unwrap_or(&empty_vec);
-                                let combined_words = reading_state.read().get_combined_words(api_words);
-                                let filtered_words = vocabulary_state.read().filter_known_words(&combined_words);
-                                let is_already_difficult = filtered_words.iter().any(|w| w.word.to_lowercase() == word.to_lowercase());
-                                
-                                if is_already_difficult {
-                                    // Word is already highlighted/difficult - add to known words
-                                    if let Err(e) = vocabulary_state.write().add_known_word(&word) {
-                                        eprintln!("Failed to add known word: {}", e);
-                                    }
-                                } else {
-                                    // Word is normal text - add to both vocabulary encounters and manual list, then fetch meaning
-                                    if let Err(e) = vocabulary_state.write().add_word_encounter(&word) {
-                                        eprintln!("Failed to add word encounter: {}", e);
-                                    }
-                                    reading_state.write().add_manual_word(word.clone());
-                                    trigger_word_meaning_fetch(word, word_to_fetch);
-                                }
+                                handle_word_click(
+                                    &word,
+                                    &mut reading_state,
+                                    &mut vocabulary_state,
+                                    word_to_fetch
+                                );
                             }
                         }
                         
@@ -258,9 +222,7 @@ fn App() -> Element {
                         {
                             let empty_vec = Vec::new();
                             let api_words = cached_result.as_ref().map(|r| &r.words).unwrap_or(&empty_vec);
-                            let combined_words = reading_state.read().get_combined_words(api_words);
-                            // Filter out known words from word meanings display too
-                            let filtered_words = vocabulary_state.read().filter_known_words(&combined_words);
+                            let filtered_words = get_display_words(api_words, &reading_state.read(), &vocabulary_state.read());
                             
                             if !filtered_words.is_empty() {
                                 rsx! {
@@ -337,5 +299,68 @@ fn App() -> Element {
             }
 
         }
+    }
+}
+
+/// Helper function to track word encounters for a sentence
+/// Returns a list of promoted words
+fn track_word_encounters(
+    sentence_key: &str,
+    words: &[glossia_shared::types::WordMeaning],
+    encounter_tracked_sentences: &mut Signal<std::collections::HashSet<String>>,
+    vocabulary_state: &mut Signal<crate::hooks::VocabularyState>,
+) -> Vec<String> {
+    let already_tracked = encounter_tracked_sentences.read().contains(sentence_key);
+    
+    if already_tracked {
+        return Vec::new();
+    }
+    
+    // Mark this sentence as tracked
+    encounter_tracked_sentences.write().insert(sentence_key.to_string());
+    
+    let mut vocab_state = vocabulary_state.write();
+    let mut promoted_words = Vec::new();
+    
+    for word_meaning in words {
+        if let Ok((_count, promoted)) = vocab_state.add_word_encounter(&word_meaning.word) {
+            if promoted {
+                promoted_words.push(word_meaning.word.clone());
+            }
+        }
+    }
+    
+    promoted_words
+}
+
+/// Helper function to handle word clicks
+fn handle_word_click(
+    word: &str,
+    reading_state: &mut Signal<glossia_book_reader::ReadingState>,
+    vocabulary_state: &mut Signal<crate::hooks::VocabularyState>,
+    word_to_fetch: Signal<String>,
+) {
+    // Get current sentence and check if word is already highlighted (difficult)
+    let current_sentence_str = reading_state.read().current_sentence().unwrap_or_default();
+    let cached_result = reading_state.read().cache.get_simplified(&current_sentence_str);
+    
+    let empty_vec = Vec::new();
+    let api_words = cached_result.as_ref().map(|r| &r.words).unwrap_or(&empty_vec);
+    let combined_words = reading_state.read().get_combined_words(api_words);
+    let filtered_words = vocabulary_state.read().filter_known_words(&combined_words);
+    let is_already_difficult = is_word_already_difficult(word, &filtered_words);
+    
+    if is_already_difficult {
+        // Word is already highlighted/difficult - add to known words
+        if let Err(e) = vocabulary_state.write().add_known_word(word) {
+            eprintln!("Failed to add known word: {}", e);
+        }
+    } else {
+        // Word is normal text - add to both vocabulary encounters and manual list, then fetch meaning
+        if let Err(e) = vocabulary_state.write().add_word_encounter(word) {
+            eprintln!("Failed to add word encounter: {}", e);
+        }
+        reading_state.write().add_manual_word(word.to_string());
+        trigger_word_meaning_fetch(word.to_string(), word_to_fetch);
     }
 }
