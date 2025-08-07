@@ -3,7 +3,7 @@ use glossia_book_reader::ReadingState;
 
 /// Custom hook for managing reading state
 pub fn use_reading_state() -> Signal<ReadingState> {
-    use_signal(ReadingState::new)
+    use_signal(|| ReadingState::new().expect("Failed to initialize reading state"))
 }
 
 /// Custom hook for handling navigation - returns closures that can be converted to EventHandlers

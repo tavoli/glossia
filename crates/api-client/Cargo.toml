@@ -10,3 +10,6 @@ serde_json = { workspace = true }
 tokio = { workspace = true }
 urlencoding = "2.1"
 glossia-shared = { path = "../shared" }
+dotenvy = { workspace = true }
+async-trait = { workspace = true }
+rand = { workspace = true }

@@ -18,23 +18,41 @@ pub fn ErrorDisplay(error: AppError, theme: Theme) -> Element {
 
 fn user_friendly_error(error: &AppError) -> String {
     match error {
-        AppError::ApiError(msg) if msg.contains("404") => {
+        AppError::ApiError { message } if message.contains("404") => {
             "The AI service is temporarily unavailable. Please try again later.".to_string()
         },
-        AppError::ApiError(msg) if msg.contains("401") || msg.contains("403") => {
+        AppError::ApiError { message } if message.contains("401") || message.contains("403") => {
             "Authentication error with the AI service. Please check your connection.".to_string()
         },
-        AppError::ApiError(msg) if msg.contains("timeout") || msg.contains("network") => {
+        AppError::ApiError { message } if message.contains("timeout") || message.contains("network") => {
             "Network connection issue. Please check your internet connection.".to_string()
         },
-        AppError::ParseError(_) => {
+        AppError::HttpError { status: 404, .. } => {
+            "The AI service is temporarily unavailable. Please try again later.".to_string()
+        },
+        AppError::HttpError { status: 401..=403, .. } => {
+            "Authentication error with the AI service. Please check your connection.".to_string()
+        },
+        AppError::HttpError { status: 429, .. } => {
+            "Too many requests. Please wait a moment and try again.".to_string()
+        },
+        AppError::HttpError { status: 500..=599, .. } => {
+            "Server error. Please try again later.".to_string()
+        },
+        AppError::ParseError { .. } => {
             "The AI response couldn't be processed. Please try again.".to_string()
+        },
+        AppError::NetworkError { .. } => {
+            "Network connection issue. Please check your internet connection.".to_string()
         },
         AppError::InvalidResponseContent => {
             "The AI service returned an unexpected response. Please try again.".to_string()
         },
         AppError::EmptyBook => {
             "No text to process. Please add some text first.".to_string()
+        },
+        AppError::ConfigError { message } => {
+            format!("Configuration error: {}", message)
         },
         _ => {
             "Something went wrong. Please try again.".to_string()

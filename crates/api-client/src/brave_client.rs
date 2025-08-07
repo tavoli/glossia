@@ -66,7 +66,7 @@ impl BraveImageClient {
         if !response.status().is_success() {
             let status = response.status();
             let error_text = response.text().await.unwrap_or_default();
-            return Err(AppError::ApiError(format!("HTTP {}: {}", status, error_text)));
+            return Err(AppError::http_error(status.as_u16(), error_text));
         }
 
         let brave_response: BraveImageResponse = response.json().await?;

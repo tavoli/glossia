@@ -7,3 +7,7 @@ edition = "2021"
 glossia-api-client = { path = "../api-client" }
 glossia-shared = { path = "../shared" }
 glossia-text-parser = { path = "../text-parser" }
+async-trait = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
