@@ -244,7 +244,10 @@ fn App() -> Element {
                                         eprintln!("Failed to add known word: {}", e);
                                     }
                                 } else {
-                                    // Word is normal text - mark as difficult
+                                    // Word is normal text - add to both vocabulary encounters and manual list, then fetch meaning
+                                    if let Err(e) = vocabulary_state.write().add_word_encounter(&word) {
+                                        eprintln!("Failed to add word encounter: {}", e);
+                                    }
                                     reading_state.write().add_manual_word(word.clone());
                                     trigger_word_meaning_fetch(word, word_to_fetch);
                                 }
