@@ -32,13 +32,28 @@ pub fn ReadingContainer(
                     // Render non-highlighted tokens before this span
                     while current_index < span.start_index {
                         let token = &tokens[current_index];
-                        elements.push(rsx! {
-                            span {
-                                key: "unhighlighted_{current_index}",
-                                style: "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;",
-                                "{token}"
-                            }
-                        });
+                        if is_word_token(token) {
+                            elements.push(rsx! {
+                                span {
+                                    key: "unhighlighted_{current_index}",
+                                    style: "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; cursor: pointer;",
+                                    ondoubleclick: {
+                                        let token_clone = token.clone();
+                                        let on_word_click_clone = on_word_click.clone();
+                                        move |_| on_word_click_clone.call(token_clone.clone())
+                                    },
+                                    "{token}"
+                                }
+                            });
+                        } else {
+                            elements.push(rsx! {
+                                span {
+                                    key: "unhighlighted_{current_index}",
+                                    style: "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;",
+                                    "{token}"
+                                }
+                            });
+                        }
                         current_index += 1;
                     }
                     
@@ -57,14 +72,9 @@ pub fn ReadingContainer(
                     };
                     
                     let color = generate_word_color(&span_text);
-                    let text_color = "white";
                     let font_weight = "600";
-                    let padding = "3px 8px";
-                    let border_radius = "16px";
-                    let font_size = "0.95em";
-                    let box_shadow = "0 1px 3px rgba(0,0,0,0.15)";
                     
-                    // Render all tokens in this span together
+                    // Render the entire span as one highlighted unit
                     let span_tokens = if span.end_index < tokens.len() {
                         &tokens[span.start_index..=span.end_index]
                     } else {
@@ -75,7 +85,7 @@ pub fn ReadingContainer(
                     elements.push(rsx! {
                         span {
                             key: "{span_key}",
-                            style: "color: {text_color}; font-weight: {font_weight}; background: {color}; padding: {padding}; border-radius: {border_radius}; font-size: {font_size}; box-shadow: {box_shadow}; cursor: pointer; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;",
+                            style: "color: {color}; font-weight: {font_weight}; cursor: pointer; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;",
                             ondoubleclick: {
                                 let span_text_clone = span_text.clone();
                                 let on_word_click_clone = on_word_click.clone();
@@ -91,13 +101,28 @@ pub fn ReadingContainer(
                 // Render remaining non-highlighted tokens
                 while current_index < tokens.len() {
                     let token = &tokens[current_index];
-                    elements.push(rsx! {
-                        span {
-                            key: "final_unhighlighted_{current_index}",
-                            style: "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;",
-                            "{token}"
-                        }
-                    });
+                    if is_word_token(token) {
+                        elements.push(rsx! {
+                            span {
+                                key: "final_unhighlighted_{current_index}",
+                                style: "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; cursor: pointer;",
+                                ondoubleclick: {
+                                    let token_clone = token.clone();
+                                    let on_word_click_clone = on_word_click.clone();
+                                    move |_| on_word_click_clone.call(token_clone.clone())
+                                },
+                                "{token}"
+                            }
+                        });
+                    } else {
+                        elements.push(rsx! {
+                            span {
+                                key: "final_unhighlighted_{current_index}",
+                                style: "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;",
+                                "{token}"
+                            }
+                        });
+                    }
                     current_index += 1;
                 }
                 
