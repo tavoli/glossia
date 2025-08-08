@@ -65,7 +65,7 @@ pub fn WordMeaningItem(
                 
                 div {
                     class: "word-label",
-                    style: format!("background: {};", generate_word_color_themed(&word_meaning.word, &theme)),
+                    style: format!("color: {};", generate_word_color_themed(&word_meaning.word, &theme)),
                     "{word_meaning.word}"
                 }
                 
