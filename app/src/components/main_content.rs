@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
-use crate::components::{ReadingContainer, WordMeanings, ErrorDisplay};
+use crate::components::{ErrorDisplay};
+use crate::components::features::reading::{LoadingState, ContentDisplay, SentenceProcessor};
 use crate::hooks::{use_simplification, VocabularyState};
-use crate::utils::word_utils::{get_display_words, track_word_encounters, handle_word_click, format_promotion_message};
 use crate::theme::Theme;
 use std::collections::HashSet;
 
@@ -15,19 +15,28 @@ pub fn MainContent(
     promotion_notification: Signal<Option<String>>,
     theme: Theme,
 ) -> Element {
-    // Use the custom simplification hook
+    // Use the simplification hook
     let future_simplification = use_simplification(reading_state, sentence_to_fetch);
     
-    // Clone signals for closures  
+    // Navigation handlers
     let mut reading_state_next = reading_state.clone();
     let mut reading_state_prev = reading_state.clone();
-    let mut reading_state_word_click = reading_state.clone();
-    let mut vocabulary_state_word_click = vocabulary_state.clone();
     let mut sentence_to_fetch_next = sentence_to_fetch.clone();
     let mut sentence_to_fetch_prev = sentence_to_fetch.clone();
-    let mut encounter_tracked_sentences_mut = encounter_tracked_sentences.clone();
-    let mut vocabulary_state_encounter = vocabulary_state.clone();
-    let mut promotion_notification_set = promotion_notification.clone();
+    
+    let on_next = move |_| {
+        reading_state_next.write().next();
+        if let Some(sentence) = reading_state_next.read().current_sentence() {
+            sentence_to_fetch_next.set(sentence);
+        }
+    };
+    
+    let on_prev = move |_| {
+        reading_state_prev.write().previous();
+        if let Some(sentence) = reading_state_prev.read().current_sentence() {
+            sentence_to_fetch_prev.set(sentence);
+        }
+    };
     
     rsx! {
         div {
@@ -37,33 +46,9 @@ pub fn MainContent(
             {
                 let current_sentence = reading_state.read().current_sentence();
                 let current_sentence_str = current_sentence.clone().unwrap_or_default();
-                
-                // Check if we have a cached result for current sentence
                 let cached_result = reading_state.read().get_cached_simplified(&current_sentence_str);
                 
-                // Track encounters for words when we have a cached result (words are being displayed)
-                if let Some(ref result) = cached_result {
-                    let promoted_words = track_word_encounters(
-                        &current_sentence_str,
-                        &result.words,
-                        &mut encounter_tracked_sentences_mut,
-                        &mut vocabulary_state_encounter,
-                    );
-                    
-                    // Show notification for promoted words
-                    if let Some(notification_text) = format_promotion_message(&promoted_words) {
-                        promotion_notification_set.set(Some(notification_text));
-                        
-                        // Clear notification after 3 seconds
-                        let mut notification_clone = promotion_notification_set.clone();
-                        spawn(async move {
-                            tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-                            notification_clone.set(None);
-                        });
-                    }
-                }
-                
-                // Check if there's an error for this sentence
+                // Determine current state
                 let sentence_being_fetched = sentence_to_fetch.read().clone();
                 let has_error = if let Some(Some(Err(_))) = future_simplification.read().as_ref() {
                     sentence_being_fetched == current_sentence_str
@@ -71,13 +56,21 @@ pub fn MainContent(
                     false
                 };
                 
-                // Check if we're currently loading this sentence (but not if there's an error or cached result)
                 let is_loading = !sentence_being_fetched.is_empty() && 
                                sentence_being_fetched == current_sentence_str &&
                                cached_result.is_none() &&
                                !has_error;
                 
                 rsx! {
+                    // Process sentence for word tracking
+                    SentenceProcessor {
+                        current_sentence: current_sentence_str.clone(),
+                        cached_result: cached_result.clone(),
+                        encounter_tracked_sentences: encounter_tracked_sentences,
+                        vocabulary_state: vocabulary_state.clone(),
+                        promotion_notification: promotion_notification,
+                    }
+                    // Error state
                     if has_error {
                         if let Some(Some(Err(e))) = future_simplification.read().as_ref() {
                             ErrorDisplay { 
@@ -87,58 +80,23 @@ pub fn MainContent(
                         }
                     }
                     
-                    ReadingContainer {
-                        original: current_sentence,
-                        simplified: cached_result.as_ref().map(|r| r.simplified.clone()),
-                        is_loading,
-                        words: {
-                            let empty_vec = Vec::new();
-                            let api_words = cached_result.as_ref().map(|r| &r.words).unwrap_or(&empty_vec);
-                            let filtered_words = get_display_words(api_words, &reading_state.read(), &vocabulary_state.read());
-                            Some(filtered_words)
-                        },
-                        theme: theme.clone(),
-                        on_next: move |_| {
-                            reading_state_next.write().next();
-                            if let Some(sentence) = reading_state_next.read().current_sentence() {
-                                sentence_to_fetch_next.set(sentence);
-                            }
-                        },
-                        on_prev: move |_| {
-                            reading_state_prev.write().previous();
-                            if let Some(sentence) = reading_state_prev.read().current_sentence() {
-                                sentence_to_fetch_prev.set(sentence);
-                            }
-                        },
-                        on_word_click: move |word: String| {
-                            handle_word_click(
-                                &word,
-                                &mut reading_state_word_click,
-                                &mut vocabulary_state_word_click,
-                                word_to_fetch
-                            );
-                        }
+                    // Loading state
+                    if is_loading && cached_result.is_none() {
+                        LoadingState { theme: theme.clone() }
                     }
                     
-                    // Show word meanings if we have API words or manual words
-                    {
-                        let empty_vec = Vec::new();
-                        let api_words = cached_result.as_ref().map(|r| &r.words).unwrap_or(&empty_vec);
-                        let filtered_words = get_display_words(api_words, &reading_state.read(), &vocabulary_state.read());
-                        
-                        if !filtered_words.is_empty() {
-                            rsx! {
-                                WordMeanings { 
-                                    words: filtered_words,
-                                    reading_state: reading_state,
-                                    current_sentence: current_sentence_str.clone(),
-                                    theme: theme.clone(),
-                                    on_expand_word: move |_word: String| {}
-                                }
-                            }
-                        } else {
-                            None
-                        }
+                    // Content display
+                    ContentDisplay {
+                        original: current_sentence.clone(),
+                        simplified: cached_result.as_ref().map(|r| r.simplified.clone()),
+                        words: cached_result.as_ref().map(|r| r.words.clone()).unwrap_or_default(),
+                        is_loading,
+                        theme: theme.clone(),
+                        reading_state: reading_state,
+                        vocabulary_state: vocabulary_state,
+                        word_to_fetch: word_to_fetch,
+                        on_next: on_next,
+                        on_prev: on_prev,
                     }
                 }
             }
