@@ -30,10 +30,10 @@ pub enum ErrorState {
 }
 
 /// Hook for managing error boundaries and preventing infinite retry loops
-pub fn use_error_boundary(config: ErrorBoundaryConfig) -> Signal<ErrorState> {
+pub fn use_error_boundary(_config: ErrorBoundaryConfig) -> Signal<ErrorState> {
     let error_state = use_signal(|| ErrorState::Normal);
-    let error_count = use_signal(|| 0u32);
-    let last_error_time = use_signal(|| Option::<Instant>::None);
+    let _error_count = use_signal(|| 0u32);
+    let _last_error_time = use_signal(|| Option::<Instant>::None);
 
     error_state
 }
@@ -116,7 +116,6 @@ pub fn handle_error_boundary(
                 false
             }
         }
-    }
 }
 
 /// Check if an error is an authentication/authorization error
@@ -142,10 +141,14 @@ where
     F: Fn() -> Fut + 'static,
     Fut: std::future::Future<Output = Result<T, AppError>> + 'static,
 {
-    let (error_state, should_allow_request) = use_error_boundary(ErrorBoundaryConfig::default());
+    let mut error_state = use_error_boundary(ErrorBoundaryConfig::default());
+    let mut error_count = use_signal(|| 0u32);
+    let mut last_error_time = use_signal(|| Option::<Instant>::None);
+    let api_call = std::sync::Arc::new(api_call);
     
     use_resource(move || {
-        let dependency = dependency.clone();
+        let _dependency = dependency.clone();
+        let api_call = api_call.clone();
         async move {
             // Check error boundary before making request
             let current_state = error_state.read().clone();
@@ -177,7 +180,8 @@ where
                 }
                 Err(error) => {
                     // Update error boundary state
-                    should_allow_request(error);
+                    let config = ErrorBoundaryConfig::default();
+                    handle_error_boundary(error, error_state, error_count, last_error_time, &config);
                 }
             }
             

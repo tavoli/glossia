@@ -1,3 +1,8 @@
+pub mod common;
+pub mod features;
+pub mod layout;
+
+// Legacy flat components (to be migrated)
 pub mod floating_button;
 pub mod progress_bar;
 pub mod reading_container;
@@ -9,14 +14,16 @@ pub mod error_display;
 pub mod image_gallery;
 pub mod word_meaning_item;
 pub mod known_words_counter;
-pub mod known_words_modal;
 pub mod app;
+pub mod app_refactored;
 pub mod main_content;
+pub mod main_content_refactored;
 pub mod clickable_word;
 pub mod token_highlighter;
 pub mod text_renderer;
 pub mod navigation_controls;
 
+// Public exports
 pub use floating_button::FloatingButton;
 pub use progress_bar::ProgressBar;
 pub use reading_container::ReadingContainer;
@@ -28,10 +35,14 @@ pub use error_display::ErrorDisplay;
 pub use image_gallery::ImageGallery;
 pub use word_meaning_item::WordMeaningItem;
 pub use known_words_counter::KnownWordsCounter;
-pub use known_words_modal::KnownWordsModal;
+pub use features::KnownWordsModal;
 pub use app::App;
 pub use main_content::MainContent;
 pub use clickable_word::ClickableWord;
-
 pub use text_renderer::TextRenderer;
 pub use navigation_controls::NavigationControls;
+
+// New organized components
+pub use layout::AppLayout;
+pub use features::{ModalManager, KeyboardHandler, LoadingState, ContentDisplay, SentenceProcessor};
+pub use features::vocabulary::WordMeaningsStyles as WordMeaningsStylesNew;
