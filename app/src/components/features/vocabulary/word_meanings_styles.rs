@@ -7,14 +7,8 @@ pub fn WordMeaningsStyles(theme: Theme) -> Element {
         style {
             "
             .word-meanings-container {{
-                margin-top: 24px;
-                width: 80%;
-                padding: 40px;
+                width: 100%;
                 background: {theme.surface};
-                max-width: 700px;
-                border: 1px solid {theme.border};
-                border-radius: 8px;
-                box-shadow: 0 2px 10px {theme.shadow};
             }}
             
             .meanings-list {{

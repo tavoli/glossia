@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use glossia_shared::types::WordMeaning;
-use crate::components::{ReadingContainer, WordMeanings};
+use crate::components::features::reading::ReadingLayout;
 use crate::theme::Theme;
 use crate::utils::word_utils::{get_display_words, handle_word_click};
 
@@ -25,12 +25,13 @@ pub fn ContentDisplay(
     let filtered_words = get_display_words(&words, &reading_state.read(), &vocabulary_state.read());
     
     rsx! {
-        ReadingContainer {
+        ReadingLayout {
             original: original.clone(),
             simplified: simplified,
             is_loading,
-            words: Some(filtered_words.clone()),
+            words: filtered_words,
             theme: theme.clone(),
+            reading_state: reading_state,
             on_next: move |_| on_next.call(()),
             on_prev: move |_| on_prev.call(()),
             on_word_click: move |word: String| {
@@ -40,17 +41,8 @@ pub fn ContentDisplay(
                     &mut vocabulary_state_word_click,
                     word_to_fetch_click
                 );
-            }
-        }
-        
-        if !filtered_words.is_empty() {
-            WordMeanings { 
-                words: filtered_words,
-                reading_state: reading_state,
-                current_sentence: original.unwrap_or_default(),
-                theme: theme.clone(),
-                on_expand_word: move |_word: String| {}
-            }
+            },
+            on_expand_word: move |_word: String| {}
         }
     }
 }

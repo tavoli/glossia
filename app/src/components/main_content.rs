@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use crate::components::{ErrorDisplay};
-use crate::components::features::reading::{LoadingState, ContentDisplay, SentenceProcessor};
+use crate::components::features::reading::{ContentDisplay, SentenceProcessor};
 use crate::hooks::{use_simplification, VocabularyState};
 use crate::theme::Theme;
 use std::collections::HashSet;
@@ -80,29 +80,18 @@ pub fn MainContent(
                         }
                     }
                     
-                    // Content wrapper with loading overlay
-                    div {
-                        class: "content-wrapper",
-                        style: "position: relative; min-height: 200px;",
-                        
-                        // Content display
-                        ContentDisplay {
-                            original: current_sentence.clone(),
-                            simplified: cached_result.as_ref().map(|r| r.simplified.clone()),
-                            words: cached_result.as_ref().map(|r| r.words.clone()).unwrap_or_default(),
-                            is_loading,
-                            theme: theme.clone(),
-                            reading_state: reading_state,
-                            vocabulary_state: vocabulary_state,
-                            word_to_fetch: word_to_fetch,
-                            on_next: on_next,
-                            on_prev: on_prev,
-                        }
-                        
-                        // Loading overlay (shows on top of content)
-                        if is_loading && cached_result.is_none() {
-                            LoadingState { theme: theme.clone() }
-                        }
+                    // Content display directly (loading is handled within ReadingLayout now)
+                    ContentDisplay {
+                        original: current_sentence.clone(),
+                        simplified: cached_result.as_ref().map(|r| r.simplified.clone()),
+                        words: cached_result.as_ref().map(|r| r.words.clone()).unwrap_or_default(),
+                        is_loading,
+                        theme: theme.clone(),
+                        reading_state: reading_state,
+                        vocabulary_state: vocabulary_state,
+                        word_to_fetch: word_to_fetch,
+                        on_next: on_next,
+                        on_prev: on_prev,
                     }
                 }
             }
