@@ -66,7 +66,10 @@ pub fn Modal(
             div {
                 class: "modal-container",
                 style: "{styles.container(&width)}",
-                onclick: |_| {},
+                onclick: move |e| {
+                    // Prevent clicks inside the modal from closing it
+                    e.stop_propagation();
+                },
                 
                 {children}
             }

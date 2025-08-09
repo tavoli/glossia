@@ -20,7 +20,7 @@ pub fn ContentDisplay(
 ) -> Element {
     let mut reading_state_word_click = reading_state.clone();
     let mut vocabulary_state_word_click = vocabulary_state.clone();
-    let mut word_to_fetch_click = word_to_fetch.clone();
+    let word_to_fetch_click = word_to_fetch.clone();
     
     let filtered_words = get_display_words(&words, &reading_state.read(), &vocabulary_state.read());
     

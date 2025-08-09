@@ -6,12 +6,32 @@ use crate::theme::Theme;
 pub fn LoadingState(theme: Theme) -> Element {
     rsx! {
         div {
-            class: "loading-container",
-            style: "display: flex; align-items: center; justify-content: center; padding: 40px;",
+            class: "loading-overlay",
+            style: {
+                let bg_color = if theme.background.contains("#fff") || theme.background.contains("255") {
+                    "rgba(255, 255, 255, 0.85)"
+                } else {
+                    "rgba(0, 0, 0, 0.3)"
+                };
+                format!(
+                    "position: absolute; top: 0; left: 0; right: 0; bottom: 0; \
+                     display: flex; align-items: center; justify-content: center; \
+                     background: {}; backdrop-filter: blur(2px); z-index: 5;",
+                    bg_color
+                )
+            },
             
             div {
                 class: "loading-spinner",
-                style: "width: 40px; height: 40px; border: 3px solid {theme.border}; border-top-color: {theme.accent}; border-radius: 50%; animation: spin 1s linear infinite;",
+                style: "
+                    width: 24px;
+                    height: 24px;
+                    border: 2px solid {theme.border};
+                    border-top-color: {theme.accent};
+                    border-radius: 50%;
+                    animation: spin 0.8s ease-in-out infinite;
+                    opacity: 0.7;
+                ",
             }
             
             style {

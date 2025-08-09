@@ -1,8 +1,9 @@
 use dioxus::prelude::*;
 use crate::components::{
-    FloatingButton, ProgressBar, ThemeToggle, KnownWordsCounter,
-    WordMeaningsStyles, MainContent
+    FloatingButton, ProgressBar, ThemeToggle, KnownWordsCounter, MainContent
 };
+use crate::components::features::vocabulary::WordMeaningsStyles;
+use crate::components::features::gallery::image_gallery_styles::ImageGalleryStyles;
 use crate::components::layout::AppLayout;
 use crate::components::features::navigation::KeyboardHandler;
 use crate::components::features::modals::ModalManager;
@@ -25,6 +26,7 @@ pub fn App() -> Element {
         style { "body {{ margin: 0; padding: 0; background: {app_state.theme.background}; color: {app_state.theme.text_primary}; }}" }
         style { {include_str!("../../assets/fonts/spectral.css")} }
         WordMeaningsStyles { theme: app_state.theme.clone() }
+        ImageGalleryStyles { theme: app_state.theme.clone() }
         
         // Top-level controls
         ThemeToggle { 

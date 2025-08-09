@@ -80,23 +80,29 @@ pub fn MainContent(
                         }
                     }
                     
-                    // Loading state
-                    if is_loading && cached_result.is_none() {
-                        LoadingState { theme: theme.clone() }
-                    }
-                    
-                    // Content display
-                    ContentDisplay {
-                        original: current_sentence.clone(),
-                        simplified: cached_result.as_ref().map(|r| r.simplified.clone()),
-                        words: cached_result.as_ref().map(|r| r.words.clone()).unwrap_or_default(),
-                        is_loading,
-                        theme: theme.clone(),
-                        reading_state: reading_state,
-                        vocabulary_state: vocabulary_state,
-                        word_to_fetch: word_to_fetch,
-                        on_next: on_next,
-                        on_prev: on_prev,
+                    // Content wrapper with loading overlay
+                    div {
+                        class: "content-wrapper",
+                        style: "position: relative; min-height: 200px;",
+                        
+                        // Content display
+                        ContentDisplay {
+                            original: current_sentence.clone(),
+                            simplified: cached_result.as_ref().map(|r| r.simplified.clone()),
+                            words: cached_result.as_ref().map(|r| r.words.clone()).unwrap_or_default(),
+                            is_loading,
+                            theme: theme.clone(),
+                            reading_state: reading_state,
+                            vocabulary_state: vocabulary_state,
+                            word_to_fetch: word_to_fetch,
+                            on_next: on_next,
+                            on_prev: on_prev,
+                        }
+                        
+                        // Loading overlay (shows on top of content)
+                        if is_loading && cached_result.is_none() {
+                            LoadingState { theme: theme.clone() }
+                        }
                     }
                 }
             }

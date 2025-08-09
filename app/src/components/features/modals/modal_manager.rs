@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
-use crate::components::{TextInputModal, KnownWordsModal};
+use crate::components::features::vocabulary::KnownWordsModal;
+use crate::components::features::modals::TextInputModal;
 use crate::hooks::AppState;
 
 /// Manages all modal rendering based on app state

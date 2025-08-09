@@ -24,30 +24,59 @@ pub fn ImageGalleryStyles(theme: Theme) -> Element {
                 color: {theme.error};
             }}
             
+            .gallery-header {{
+                margin-bottom: 12px;
+                color: {theme.text_primary};
+                font-weight: 500;
+                font-size: 0.9em;
+            }}
+            
             .images-grid {{
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                display: flex;
                 gap: 12px;
-                max-width: 100%;
+                overflow-x: auto;
+                padding: 4px;
+                scroll-behavior: smooth;
+                -webkit-overflow-scrolling: touch;
+            }}
+            
+            .images-grid::-webkit-scrollbar {{
+                height: 6px;
+            }}
+            
+            .images-grid::-webkit-scrollbar-track {{
+                background: {theme.background};
+                border-radius: 3px;
+            }}
+            
+            .images-grid::-webkit-scrollbar-thumb {{
+                background: {theme.border};
+                border-radius: 3px;
+            }}
+            
+            .images-grid::-webkit-scrollbar-thumb:hover {{
+                background: {theme.accent};
             }}
             
             .image-item {{
                 position: relative;
                 background: {theme.surface};
-                border-radius: 6px;
+                border-radius: 8px;
                 overflow: hidden;
-                box-shadow: 0 2px 4px {theme.shadow};
-                transition: transform 0.2s ease;
+                box-shadow: 0 2px 6px {theme.shadow};
+                transition: all 0.3s ease;
+                flex: 0 0 150px;
+                cursor: pointer;
             }}
             
             .image-item:hover {{
-                transform: translateY(-2px);
-                box-shadow: 0 4px 8px {theme.shadow};
+                transform: scale(1.05);
+                box-shadow: 0 4px 12px {theme.shadow};
             }}
             
             .image-item img {{
-                width: 100%;
-                height: 120px;
+                width: 150px;
+                height: 150px;
                 object-fit: cover;
                 display: block;
             }}
