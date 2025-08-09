@@ -6,8 +6,14 @@ edition = "2021"
 [dependencies]
 dioxus = { workspace = true, features = ["desktop"] }
 dioxus-desktop = { workspace = true }
-glossia-book-reader = { path = "../crates/book-reader" }
+glossia-reading-engine = { path = "../crates/reading-engine" }
+glossia-navigation-service = { path = "../crates/navigation-service" }
+glossia-vocabulary-manager = { path = "../crates/vocabulary-manager" }
 glossia-shared = { path = "../crates/shared" }
+glossia-image-client = { path = "../crates/image-client" }
+glossia-llm-client = { path = "../crates/llm-client" }
+glossia-http-client = { path = "../crates/http-client" }
+glossia-logging = { path = "../crates/logging" }
 regex = "1.0"
 futures-util = "0.3"
 serde = { workspace = true }
@@ -15,6 +21,10 @@ serde_json = { workspace = true }
 dirs = "5.0"
 anyhow = "1.0"
 tokio = { version = "1.0", features = ["time"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+dotenvy = "0.15"
+ctrlc = "3.4"
 
 [dev-dependencies]
 dioxus-hot-reload = { version = "0.5.1" }

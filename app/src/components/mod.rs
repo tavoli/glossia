@@ -10,6 +10,12 @@ pub mod image_gallery;
 pub mod word_meaning_item;
 pub mod known_words_counter;
 pub mod known_words_modal;
+pub mod app;
+pub mod main_content;
+pub mod clickable_word;
+pub mod token_highlighter;
+pub mod text_renderer;
+pub mod navigation_controls;
 
 pub use floating_button::FloatingButton;
 pub use progress_bar::ProgressBar;
@@ -23,3 +29,9 @@ pub use image_gallery::ImageGallery;
 pub use word_meaning_item::WordMeaningItem;
 pub use known_words_counter::KnownWordsCounter;
 pub use known_words_modal::KnownWordsModal;
+pub use app::App;
+pub use main_content::MainContent;
+pub use clickable_word::ClickableWord;
+
+pub use text_renderer::TextRenderer;
+pub use navigation_controls::NavigationControls;

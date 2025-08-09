@@ -1,0 +1,19 @@
+[package]
+name = "glossia-image-client"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+glossia-shared = { path = "../shared" }
+glossia-http-client = { path = "../http-client" }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+urlencoding = "2.1"
+tokio = { workspace = true }
+tracing = { workspace = true }
+dotenvy = "0.15"
+
+[dev-dependencies]
+tokio = { workspace = true }
+tokio-test = "0.4"

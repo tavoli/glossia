@@ -7,7 +7,7 @@ use std::collections::HashSet;
 pub fn WordMeanings(
     words: Vec<WordMeaning>, 
     on_expand_word: EventHandler<String>, 
-    reading_state: Signal<glossia_book_reader::ReadingState>,
+    reading_state: Signal<glossia_reading_engine::ReadingEngine>,
     current_sentence: String,
     theme: crate::theme::Theme,
 ) -> Element {

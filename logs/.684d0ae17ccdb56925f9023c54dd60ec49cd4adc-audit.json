@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/Users/gustavo.lima/MyProject/glossia/logs/.684d0ae17ccdb56925f9023c54dd60ec49cd4adc-audit.json",
+    "files": [
+        {
+            "date": 1754746276283,
+            "name": "/Users/gustavo.lima/MyProject/glossia/logs/mcp-puppeteer-2025-08-09.log",
+            "hash": "d3253f8eb387924919032faad97ccc41e743265aad801dbbedcb9459626b0ca1"
+        }
+    ],
+    "hashType": "sha256"
+}

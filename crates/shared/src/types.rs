@@ -19,6 +19,8 @@ pub struct WordMeaning {
     pub meaning: String,
     #[serde(default)]
     pub is_phrase: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timestamp: Option<u64>,
 }
 
 impl WordMeaning {
@@ -27,6 +29,7 @@ impl WordMeaning {
             word,
             meaning,
             is_phrase: false,
+            timestamp: None,
         }
     }
     
@@ -35,6 +38,16 @@ impl WordMeaning {
             word: phrase,
             meaning,
             is_phrase: true,
+            timestamp: None,
+        }
+    }
+    
+    pub fn new_with_timestamp(word: String, meaning: String, timestamp: u64) -> Self {
+        Self {
+            word,
+            meaning,
+            is_phrase: false,
+            timestamp: Some(timestamp),
         }
     }
     

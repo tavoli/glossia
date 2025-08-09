@@ -1,0 +1,11 @@
+[package]
+name = "glossia-navigation-service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+glossia-shared = { path = "../shared" }
+glossia-text-parser = { path = "../text-parser" }
+
+[dev-dependencies]
+tokio = { workspace = true }

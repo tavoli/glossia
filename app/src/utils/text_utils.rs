@@ -3,6 +3,7 @@ use std::hash::{Hash, Hasher};
 use crate::theme::{Theme, ThemeMode};
 
 /// Generate a consistent color for a given word (legacy function for backwards compatibility)
+#[allow(dead_code)]
 pub fn generate_word_color(word: &str) -> String {
     // Use light theme colors by default for backwards compatibility
     generate_word_color_themed(word, &Theme::light())

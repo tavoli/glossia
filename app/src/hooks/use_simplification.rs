@@ -1,10 +1,11 @@
 use dioxus::prelude::*;
-use glossia_book_reader::ReadingState;
+use glossia_reading_engine::ReadingEngine;
 use glossia_shared::{AppError, SimplificationResponse};
+
 
 /// Custom hook for managing sentence simplification with caching and proactive fetching
 pub fn use_simplification(
-    mut reading_state: Signal<ReadingState>,
+    mut reading_state: Signal<ReadingEngine>,
     sentence_to_fetch: Signal<String>,
 ) -> Resource<Option<Result<SimplificationResponse, AppError>>> {
     use_resource(move || {
@@ -14,52 +15,53 @@ pub fn use_simplification(
                 return None;
             }
             
-            // Check cache first
-            let cached_result = {
-                let state_read = reading_state.read();
-                state_read.cache.get_simplified(&sentence)
-            };
+            // Check cache first (read-only operation)
+            let cached_result = reading_state.read().get_cached_simplified(&sentence);
             
             if let Some(cached) = cached_result {
                 // Proactively fetch next sentence while we're here
-                let should_fetch_next = {
+                let (should_fetch_next, current_pos) = {
                     let state = reading_state.read();
-                    if state.position() + 1 < state.sentences().len() {
-                        let next_sentence = &state.sentences()[state.position() + 1];
-                        state.cache.get_simplified(next_sentence).is_none()
-                    } else {
-                        false
-                    }
+                    (state.position() + 1 < state.total_sentences(), state.position())
                 };
                 
                 if should_fetch_next {
-                    let (next_sentence, api_client) = {
+                    // Get next sentence without modifying position
+                    let next_sentence = {
                         let state = reading_state.read();
-                        (state.sentences()[state.position() + 1].clone(), state.api_client.clone())
+                        state.get_sentence_at_position(current_pos + 1).unwrap_or_default()
                     };
                     
-                    let mut reading_state_for_proactive = reading_state.clone();
-                    spawn(async move {
-                        let request = glossia_shared::SimplificationRequest { sentence: next_sentence.clone() };
-                        if let Ok(result) = api_client.simplify(request).await {
-                            let mut state = reading_state_for_proactive.write();
-                            state.cache.cache_simplified(next_sentence, result);
-                        }
-                    });
+                    // Only fetch if not cached
+                    if reading_state.read().get_cached_simplified(&next_sentence).is_none() {
+                        let mut reading_state_for_proactive = reading_state.clone();
+                        let next_sentence_clone = next_sentence.clone();
+                        spawn(async move {
+                            // Double-check cache (since some time may have passed)
+                            if reading_state_for_proactive.read().get_cached_simplified(&next_sentence_clone).is_some() {
+                                return; // Already cached by another operation
+                            }
+                            
+                            // Use static method to avoid holding any borrow across await
+                            let response = glossia_reading_engine::ReadingEngine::simplify_sentence_static(&next_sentence_clone).await;
+                            // Cache the result afterwards (borrow is dropped from above block)
+                            if let Ok(response) = response {
+                                reading_state_for_proactive.write().cache_simplification_result(next_sentence_clone, response);
+                            }
+                        });
+                    }
                 }
                 
                 return Some(Ok(cached));
             }
 
-            // Fetch from API
-            let result = {
-                let api_client = reading_state.read().api_client.clone();
-                api_client.simplify(glossia_shared::SimplificationRequest { sentence: sentence.clone() }).await
-            };
+            // Fetch from API without holding any borrow
+            let result: Result<SimplificationResponse, AppError> = 
+                glossia_reading_engine::ReadingEngine::simplify_sentence_static(&sentence).await;
             
-            // Cache the result if successful
-            if let Ok(ref res) = result {
-                reading_state.write().cache.cache_simplified(sentence.clone(), res.clone());
+            // Cache the result if successful (separate mutable operation, borrow is dropped from above block)
+            if let Ok(ref response) = result {
+                reading_state.write().cache_simplification_result(sentence.clone(), response.clone());
             }
             
             Some(result)
@@ -68,8 +70,9 @@ pub fn use_simplification(
 }
 
 /// Helper function to trigger sentence fetching
+#[allow(dead_code)]
 pub fn trigger_sentence_fetch(
-    reading_state: Signal<ReadingState>,
+    reading_state: Signal<ReadingEngine>,
     mut sentence_to_fetch: Signal<String>,
 ) {
     if let Some(sentence) = reading_state.read().current_sentence() {

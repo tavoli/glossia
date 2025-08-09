@@ -1,0 +1,13 @@
+[package]
+name = "glossia-reading-engine"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+glossia-shared = { path = "../shared" }
+glossia-navigation-service = { path = "../navigation-service" }
+glossia-vocabulary-manager = { path = "../vocabulary-manager" }
+glossia-llm-client = { path = "../llm-client" }
+
+[dev-dependencies]
+tokio = { workspace = true }

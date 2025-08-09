@@ -5,7 +5,7 @@ use crate::theme::Theme;
 use crate::components::ImageGallery;
 use crate::hooks::{use_image_cache, use_image_fetcher, use_vocabulary};
 use std::collections::HashSet;
-use glossia_book_reader::ReadingState;
+use glossia_reading_engine::ReadingEngine;
 
 #[component]
 pub fn WordMeaningItem(
@@ -13,7 +13,7 @@ pub fn WordMeaningItem(
     is_last: bool,
     expanded_words: Signal<HashSet<String>>,
     on_expand_word: EventHandler<String>,
-    reading_state: Signal<ReadingState>,
+    reading_state: Signal<ReadingEngine>,
     current_sentence: String,
     theme: Theme,
 ) -> Element {

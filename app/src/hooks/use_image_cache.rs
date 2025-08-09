@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use std::collections::HashMap;
 use crate::services::{ImageService, ImageFetchState};
-use glossia_book_reader::ReadingState;
+use glossia_reading_engine::ReadingEngine;
 
 /// Custom hook for managing image cache and fetching
 pub fn use_image_cache() -> Signal<HashMap<String, ImageFetchState>> {
@@ -10,7 +10,7 @@ pub fn use_image_cache() -> Signal<HashMap<String, ImageFetchState>> {
 
 /// Custom hook for fetching images for a specific word
 pub fn use_image_fetcher(
-    reading_state: Signal<ReadingState>,
+    reading_state: Signal<ReadingEngine>,
     mut image_cache: Signal<HashMap<String, ImageFetchState>>,
 ) -> impl FnMut(String, String, String) + 'static {
     move |word: String, word_meaning: String, sentence_context: String| {
