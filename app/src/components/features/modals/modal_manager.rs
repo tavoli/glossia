@@ -13,6 +13,7 @@ pub fn modal_manager(app_state: AppState) -> Element {
     rsx! {
         if *app_state.show_input_modal.read() {
             TextInputModal {
+                theme: app_state.theme.clone(),
                 onsubmit: move |text: String| {
                     input_submit_state.load_text(text);
                 },

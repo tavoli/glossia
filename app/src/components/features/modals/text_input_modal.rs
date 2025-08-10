@@ -1,12 +1,14 @@
 use dioxus::prelude::*;
 use crate::components::common::modals::Modal;
-use crate::theme::{use_theme, Theme};
+use crate::theme::Theme;
 
 #[component]
-pub fn TextInputModal(onsubmit: EventHandler<String>, onclose: EventHandler<()>) -> Element {
+pub fn TextInputModal(
+    theme: Theme,
+    onsubmit: EventHandler<String>,
+    onclose: EventHandler<()>,
+) -> Element {
     let mut text_content = use_signal(String::new);
-    let theme_mode = use_theme();
-    let theme = Theme::from_mode(*theme_mode.read());
     
     let scrollbar_thumb_color = if theme.mode == crate::theme::ThemeMode::Light { 
         "rgba(0,0,0,0.2)" 
@@ -64,14 +66,7 @@ pub fn TextInputModal(onsubmit: EventHandler<String>, onclose: EventHandler<()>)
             
             div {
                 class: "text-input-modal",
-                style: format!(
-                    "padding: 32px; background: {}; border-radius: 12px;",
-                    if theme.mode == crate::theme::ThemeMode::Light { 
-                        "linear-gradient(135deg, #ffffff 0%, #fafafa 100%)" 
-                    } else { 
-                        "linear-gradient(135deg, #2d2d2d 0%, #262626 100%)" 
-                    }
-                ),
+                style: "padding: 32px; display: flex; flex-direction: column; height: 100%; overflow-y: auto;",
                 
                 // Header with icon
                 div {
@@ -105,7 +100,8 @@ pub fn TextInputModal(onsubmit: EventHandler<String>, onclose: EventHandler<()>)
                     class: "text-input",
                     style: format!(
                         "
-                        min-height: 280px; 
+                        min-height: 200px;
+                        max-height: 40vh;
                         border: 2px solid {}; 
                         border-radius: 10px; 
                         margin-bottom: 24px; 
@@ -121,8 +117,8 @@ pub fn TextInputModal(onsubmit: EventHandler<String>, onclose: EventHandler<()>)
                         transition: all 0.2s ease;
                         outline: none;
                         ",
-                        if theme.mode == crate::theme::ThemeMode::Light { "#e0e0e0" } else { "#404040" },
-                        theme.background,
+                        theme.border,
+                        if theme.mode == crate::theme::ThemeMode::Light { "#fafafa" } else { "#1a1a1a" },
                         theme.text_primary
                     ),
                     placeholder: "Paste your text here...",
@@ -144,7 +140,7 @@ pub fn TextInputModal(onsubmit: EventHandler<String>, onclose: EventHandler<()>)
                 }
                 
                 div {
-                    style: "display: flex; justify-content: space-between; align-items: center;",
+                    style: "display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 16px;",
                     
                     // Left side hint
                     div {
