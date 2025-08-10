@@ -44,8 +44,8 @@ impl Theme {
             error: "#c62828",
             error_bg: "#ffebee",
             hover_bg: "#f8f9fa",
-            gallery_bg: "#f8f9fa",
-            gallery_border: "#e9ecef",
+            gallery_bg: "transparent",
+            gallery_border: "rgba(0,0,0,0.05)",
         }
     }
 
@@ -62,8 +62,8 @@ impl Theme {
             error: "#ef5350",
             error_bg: "#3d1a1a",
             hover_bg: "#3a3a3a",
-            gallery_bg: "#252525",
-            gallery_border: "#404040",
+            gallery_bg: "transparent",
+            gallery_border: "rgba(255,255,255,0.05)",
         }
     }
 

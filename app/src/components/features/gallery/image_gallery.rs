@@ -2,23 +2,22 @@ use dioxus::prelude::*;
 use glossia_shared::ImageResult;
 use std::collections::HashMap;
 use crate::services::ImageFetchState;
+use crate::components::features::reading::ImageGallerySkeleton;
+use crate::theme::{use_theme, Theme};
 
 #[component]
 pub fn ImageGallery(
     word: String,
     image_cache: Signal<HashMap<String, ImageFetchState>>,
 ) -> Element {
+    let theme_mode = use_theme();
+    let theme = Theme::from_mode(*theme_mode.read());
     let image_state = image_cache.read().get(&word).cloned();
     
     match image_state {
         Some(ImageFetchState::Loading) | None => rsx! {
-            div {
-                class: "image-gallery",
-                div {
-                    class: "gallery-message loading",
-                    span { class: "spinner", }
-                    "Loading images..."
-                }
+            ImageGallerySkeleton {
+                theme: theme
             }
         },
         Some(ImageFetchState::Loaded(images)) => {
@@ -36,11 +35,6 @@ pub fn ImageGallery(
                 rsx! {
                     div {
                         class: "image-gallery",
-                        
-                        div {
-                            class: "gallery-header",
-                            "Images for \"{word}\""
-                        }
                         
                         div {
                             class: "images-grid",
@@ -77,12 +71,6 @@ fn ImageThumbnail(image: ImageResult) -> Element {
                 src: "{image.thumbnail_url}",
                 alt: "{image.title}",
                 loading: "lazy",
-            }
-            
-            div {
-                class: "image-title",
-                title: "{image.title}",
-                "{image.title}"
             }
         }
     }

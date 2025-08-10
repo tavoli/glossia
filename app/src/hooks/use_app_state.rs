@@ -87,11 +87,6 @@ impl AppState {
         self.vocabulary_state.read().known_words_count
     }
 
-    /// Check if we should show the floating button
-    pub fn should_show_floating_button(&self) -> bool {
-        self.reading_state.read().total_sentences() > 0 || !*self.show_input_modal.read()
-    }
-
     /// Get the floating button count
     pub fn floating_button_count(&self) -> usize {
         if self.reading_state.read().total_sentences() > 0 {

@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use glossia_shared::WordMeaning;
 use crate::theme::Theme;
 use crate::components::TextRenderer;
+use crate::components::features::reading::SimplifiedTextSkeleton;
 
 #[component]
 pub fn ReadingContainer(
@@ -36,13 +37,11 @@ pub fn ReadingContainer(
             if simplified.is_some() || is_loading {
                 div {
                     class: "simplified-text",
-                    style: "margin-top: 20px; font-size: 1.2em; color: {theme.text_secondary}; min-height: 50px; line-height: 1.5;",
+                    style: "margin-top: 20px; font-size: 1.2em; color: {theme.text_secondary}; min-height: 60px; line-height: 1.5;",
                     
                     if is_loading {
-                        div { 
-                            class: "loading-indicator",
-                            style: "color: {theme.text_secondary}; opacity: 0.6;",
-                            "Loading simplified version..." 
+                        SimplifiedTextSkeleton {
+                            theme: theme.clone()
                         }
                     } else if let Some(text) = simplified {
                         TextRenderer {

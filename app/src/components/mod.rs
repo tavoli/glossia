@@ -8,6 +8,7 @@ pub mod progress_bar;
 pub mod theme_toggle;
 pub mod error_display;
 pub mod known_words_counter;
+pub mod top_controls;
 pub mod app;
 pub mod main_content;
 
@@ -34,10 +35,8 @@ pub use features::gallery::ImageGallery;
 // From common
 
 // Legacy components
-pub use floating_button::FloatingButton;
 pub use progress_bar::ProgressBar;
-pub use theme_toggle::ThemeToggle;
 pub use error_display::ErrorDisplay;
-pub use known_words_counter::KnownWordsCounter;
+pub use top_controls::TopControls;
 pub use app::App;
 pub use main_content::MainContent;

@@ -7,6 +7,7 @@ pub mod token_highlighter;
 pub mod reading_container;
 pub mod navigation_controls;
 pub mod reading_layout;
+pub mod skeleton_loaders;
 
 pub use content_display::ContentDisplay;
 pub use sentence_processor::SentenceProcessor;
@@ -15,3 +16,4 @@ pub use text_renderer::TextRenderer;
 pub use reading_container::ReadingContainer;
 pub use navigation_controls::NavigationControls;
 pub use reading_layout::ReadingLayout;
+pub use skeleton_loaders::{WordMeaningSkeleton, SimplifiedTextSkeleton, ImageGallerySkeleton};

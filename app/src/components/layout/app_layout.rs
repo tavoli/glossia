@@ -12,10 +12,15 @@ pub fn AppLayout(
             class: "app-container",
             style: "min-height: 100vh; width: 100%; background: {theme.background}; font-family: 'Alegreya', Palatino, 'Book Antiqua', serif; display: flex; flex-direction: column; position: relative;",
             
-            // Theme-aware grid background
+            // Theme-aware subtle gradient background
             div {
                 class: "app-background",
-                style: "position: absolute; inset: 0; z-index: 1; background: {theme.background}; background-image: linear-gradient(to right, {theme.border} 1px, transparent 1px), linear-gradient(to bottom, {theme.border} 1px, transparent 1px), radial-gradient(circle at 50% 60%, rgba(236,72,153,0.15) 0%, rgba(168,85,247,0.05) 40%, transparent 70%); background-size: 40px 40px, 40px 40px, 100% 100%;",
+                style: match theme.mode {
+                    crate::theme::ThemeMode::Light => 
+                        "position: absolute; inset: 0; z-index: 1; background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 50%, #fafafa 100%); background-size: 100% 100%;",
+                    crate::theme::ThemeMode::Dark => 
+                        "position: absolute; inset: 0; z-index: 1; background: linear-gradient(135deg, #1a1a1a 0%, #1f1f1f 50%, #1a1a1a 100%); background-size: 100% 100%;",
+                },
             }
             
             // Main content with proper z-index to appear above background

@@ -37,6 +37,7 @@ pub fn WordMeaningItem(
         let sentence_context = current_sentence.clone();
         let mut expanded_words = expanded_words.clone();
         let on_expand_word = on_expand_word.clone();
+        let image_cache_check = image_cache.clone();
         
         move |_| {
             let is_currently_expanded = expanded_words.read().contains(&word);
@@ -49,8 +50,13 @@ pub fn WordMeaningItem(
                 expanded_words.write().insert(word.clone());
                 on_expand_word.call(word.clone());
                 
-                // Trigger image fetch for this specific word
-                fetch_images(word.clone(), word_meaning_text.clone(), sentence_context.clone());
+                // Check cache state at the time of expansion
+                let has_cached_images = image_cache_check.read().contains_key(&word);
+                
+                // Only fetch images if not already cached
+                if !has_cached_images {
+                    fetch_images(word.clone(), word_meaning_text.clone(), sentence_context.clone());
+                }
             }
         }
     };

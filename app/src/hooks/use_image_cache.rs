@@ -5,7 +5,7 @@ use glossia_reading_engine::ReadingEngine;
 
 /// Custom hook for managing image cache and fetching
 pub fn use_image_cache() -> Signal<HashMap<String, ImageFetchState>> {
-    use_signal(HashMap::new)
+    use_context::<Signal<HashMap<String, ImageFetchState>>>()
 }
 
 /// Custom hook for fetching images for a specific word

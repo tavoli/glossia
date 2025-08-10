@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use crate::components::{
-    FloatingButton, ProgressBar, ThemeToggle, KnownWordsCounter, MainContent
+    ProgressBar, TopControls, MainContent
 };
 use crate::components::features::vocabulary::WordMeaningsStyles;
 use crate::components::features::gallery::image_gallery_styles::ImageGalleryStyles;
@@ -12,6 +12,10 @@ use crate::hooks::{use_app_state, use_word_meaning_effect};
 #[component]
 pub fn App() -> Element {
     let mut app_state = use_app_state();
+    
+    // Global image cache context
+    let image_cache = use_signal(std::collections::HashMap::<String, crate::services::ImageFetchState>::new);
+    use_context_provider(|| image_cache);
     
     // Handle word meaning effects
     use_word_meaning_effect(&mut app_state);
@@ -29,15 +33,14 @@ pub fn App() -> Element {
         ImageGalleryStyles { theme: app_state.theme.clone() }
         
         // Top-level controls
-        ThemeToggle { 
-            theme_mode: app_state.theme_mode, 
-            on_toggle: move |_| theme_state.toggle_theme()
-        }
-        
-        KnownWordsCounter {
-            count: app_state.known_words_count(),
+        TopControls {
+            theme_mode: app_state.theme_mode,
             theme: app_state.theme.clone(),
-            on_click: move |_| known_words_state.show_known_words_modal()
+            known_words_count: app_state.known_words_count(),
+            sentence_count: app_state.floating_button_count(),
+            on_theme_toggle: move |_| theme_state.toggle_theme(),
+            on_known_words_click: move |_| known_words_state.show_known_words_modal(),
+            on_add_text_click: move |_| input_modal_state.show_input_modal()
         }
         
         // Main app structure with keyboard navigation
@@ -65,13 +68,6 @@ pub fn App() -> Element {
                     encounter_tracked_sentences: app_state.encounter_tracked_sentences,
                     promotion_notification: app_state.promotion_notification,
                     theme: app_state.theme.clone(),
-                }
-                
-                if app_state.should_show_floating_button() {
-                    FloatingButton {
-                        count: app_state.floating_button_count(),
-                        onclick: move |_| input_modal_state.show_input_modal()
-                    }
                 }
             }
         })}

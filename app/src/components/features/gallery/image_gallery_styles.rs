@@ -7,11 +7,11 @@ pub fn ImageGalleryStyles(theme: Theme) -> Element {
         style {
             "
             .image-gallery {{
-                margin-top: 16px;
-                padding: 16px;
+                margin-top: 12px;
+                padding: 0;
                 background: {theme.gallery_bg};
-                border-radius: 8px;
-                border: 1px solid {theme.gallery_border};
+                border-radius: 0;
+                border: none;
             }}
             
             .gallery-message {{
@@ -33,9 +33,9 @@ pub fn ImageGalleryStyles(theme: Theme) -> Element {
             
             .images-grid {{
                 display: flex;
-                gap: 12px;
+                gap: 8px;
                 overflow-x: auto;
-                padding: 4px;
+                padding: 0;
                 scroll-behavior: smooth;
                 -webkit-overflow-scrolling: touch;
             }}
@@ -60,18 +60,17 @@ pub fn ImageGalleryStyles(theme: Theme) -> Element {
             
             .image-item {{
                 position: relative;
-                background: {theme.surface};
-                border-radius: 8px;
+                background: transparent;
+                border-radius: 6px;
                 overflow: hidden;
-                box-shadow: 0 2px 6px {theme.shadow};
-                transition: all 0.3s ease;
+                box-shadow: 0 1px 3px {theme.shadow};
+                transition: opacity 0.2s ease;
                 flex: 0 0 150px;
                 cursor: pointer;
             }}
             
             .image-item:hover {{
-                transform: scale(1.05);
-                box-shadow: 0 4px 12px {theme.shadow};
+                opacity: 0.9;
             }}
             
             .image-item img {{
