@@ -17,6 +17,9 @@ pub struct AppState {
     pub word_to_fetch: Signal<String>,
     pub promotion_notification: Signal<Option<String>>,
     pub encounter_tracked_sentences: Signal<HashSet<String>>,
+    pub last_clipboard_text: Signal<Option<String>>,
+    pub current_clipboard_text: Signal<Option<String>>,
+    pub show_clipboard_toast: Signal<bool>,
 }
 
 impl AppState {
@@ -77,8 +80,41 @@ impl AppState {
                 self.sentence_to_fetch.set(sentence);
             }
             
+            // Update last clipboard text to prevent toast from showing for this text
+            self.last_clipboard_text.set(Some(text.clone()));
+            
             info!(total_sentences = self.reading_state.read().total_sentences(), "Text loaded successfully");
             self.hide_input_modal();
+        }
+    }
+    
+    /// Load text from clipboard without showing modal
+    pub fn load_text_from_clipboard(&mut self) {
+        let text = self.current_clipboard_text.read().clone();
+        if let Some(text) = text {
+            info!("Loading text from clipboard: {} chars", text.len());
+            
+            // Load the text
+            self.load_text(text.clone());
+            
+            // Update last clipboard text
+            self.last_clipboard_text.set(Some(text));
+            
+            // Hide the toast
+            self.show_clipboard_toast.set(false);
+            
+            // Make sure modal is not shown
+            self.hide_input_modal();
+        }
+    }
+    
+    /// Dismiss clipboard toast
+    pub fn dismiss_clipboard_toast(&mut self) {
+        self.show_clipboard_toast.set(false);
+        // Update last clipboard to prevent re-showing
+        let text = self.current_clipboard_text.read().clone();
+        if let Some(text) = text {
+            self.last_clipboard_text.set(Some(text));
         }
     }
 
@@ -131,12 +167,16 @@ pub fn use_app_state() -> AppState {
     let theme_mode = use_theme();
     let theme = Theme::from_mode(*theme_mode.read());
     
-    let show_input_modal = use_signal(|| true);
+    // Don't show input modal by default - we'll check clipboard first
+    let show_input_modal = use_signal(|| false);
     let show_known_words_modal = use_signal(|| false);
     let sentence_to_fetch = use_signal(String::new);
     let word_to_fetch = use_signal(String::new);
     let promotion_notification = use_signal(|| None::<String>);
     let encounter_tracked_sentences = use_signal(|| HashSet::<String>::new());
+    let last_clipboard_text = use_signal(|| None::<String>);
+    let current_clipboard_text = use_signal(|| None::<String>);
+    let show_clipboard_toast = use_signal(|| false);
 
     AppState {
         reading_state,
@@ -149,5 +189,8 @@ pub fn use_app_state() -> AppState {
         word_to_fetch,
         promotion_notification,
         encounter_tracked_sentences,
+        last_clipboard_text,
+        current_clipboard_text,
+        show_clipboard_toast,
     }
 }

@@ -164,10 +164,8 @@ pub fn ImageGallerySkeleton(theme: Theme) -> Element {
             "
             .image-gallery-skeleton {{
                 margin-top: 16px;
-                padding: 16px;
                 background: {theme.gallery_bg};
                 border-radius: 8px;
-                border: 1px solid {theme.gallery_border};
             }}
             
             .skeleton-images-grid {{
@@ -182,7 +180,6 @@ pub fn ImageGallerySkeleton(theme: Theme) -> Element {
                 background: {theme.surface};
                 border-radius: 8px;
                 overflow: hidden;
-                box-shadow: 0 2px 6px {theme.shadow};
                 flex: 0 0 150px;
                 height: 150px;
             }}

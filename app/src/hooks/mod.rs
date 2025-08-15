@@ -6,6 +6,7 @@ pub mod use_vocabulary;
 pub mod use_app_state;
 pub mod use_word_tracking;
 pub mod use_word_meaning_effect;
+pub mod use_clipboard_monitor;
 
 pub use use_reading_state::*;
 pub use use_simplification::*;
@@ -15,3 +16,4 @@ pub use use_vocabulary::*;
 pub use use_app_state::*;
 pub use use_word_tracking::*;
 pub use use_word_meaning_effect::*;
+pub use use_clipboard_monitor::*;

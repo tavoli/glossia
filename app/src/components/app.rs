@@ -4,10 +4,11 @@ use crate::components::{
 };
 use crate::components::features::vocabulary::WordMeaningsStyles;
 use crate::components::features::gallery::image_gallery_styles::ImageGalleryStyles;
+use crate::components::features::clipboard::ClipboardToast;
 use crate::components::layout::AppLayout;
 use crate::components::features::navigation::KeyboardHandler;
 use crate::components::features::modals::ModalManager;
-use crate::hooks::{use_app_state, use_word_meaning_effect};
+use crate::hooks::{use_app_state, use_word_meaning_effect, use_clipboard_monitor};
 
 #[component]
 pub fn App() -> Element {
@@ -20,10 +21,22 @@ pub fn App() -> Element {
     // Handle word meaning effects
     use_word_meaning_effect(&mut app_state);
     
+    // Initialize clipboard monitoring
+    let current_text = app_state.reading_state.read().current_sentence().unwrap_or_default();
+    use_clipboard_monitor(
+        app_state.last_clipboard_text.clone(),
+        app_state.current_clipboard_text.clone(),
+        app_state.show_clipboard_toast.clone(),
+        current_text,
+    );
+    
+    
     // Clone for closures
     let mut theme_state = app_state.clone();
     let mut known_words_state = app_state.clone();
     let mut input_modal_state = app_state.clone();
+    let mut clipboard_read_state = app_state.clone();
+    let mut clipboard_dismiss_state = app_state.clone();
     
     rsx! {
         // Global styles
@@ -74,5 +87,17 @@ pub fn App() -> Element {
         
         // Modals rendered outside main layout
         {ModalManager(app_state.clone())}
+        
+        // Clipboard toast notification
+        if *app_state.show_clipboard_toast.read() {
+            if let Some(clipboard_text) = app_state.current_clipboard_text.read().clone() {
+                ClipboardToast {
+                    theme: app_state.theme.clone(),
+                    clipboard_text: clipboard_text,
+                    on_read: move |_| clipboard_read_state.load_text_from_clipboard(),
+                    on_dismiss: move |_| clipboard_dismiss_state.dismiss_clipboard_toast()
+                }
+            }
+        }
     }
 }
